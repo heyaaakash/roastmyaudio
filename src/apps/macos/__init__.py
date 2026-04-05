@@ -1,0 +1,1 @@
+"""macOS application module."""

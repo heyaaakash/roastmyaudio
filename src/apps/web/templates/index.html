@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whisper Web MVP</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Speech to Text</h1>
+      <p class="subtitle">Press record, speak, then stop to transcribe.</p>
+
+      <div class="controls-row">
+        <label for="modelSelect">Model</label>
+        <select id="modelSelect" aria-label="Whisper model selector"></select>
+      </div>
+
+      <div class="controls-row">
+        <input type="checkbox" id="strictModeCheckbox" />
+        <label for="strictModeCheckbox">Strict Mode (no changes to text)</label>
+      </div>
+
+      <button id="recordBtn" class="record-btn" type="button">Start Recording</button>
+
+      <p id="status" class="status">Idle</p>
+
+      <section class="live-preview">
+        <div class="output-header">
+          <h2>Live Preview</h2>
+          <span class="live-pill">Low latency</span>
+        </div>
+        <div id="livePreview" class="live-text">Waiting for speech...</div>
+      </section>
+
+      <section class="output">
+        <div class="output-header">
+          <h2>Transcript</h2>
+          <div class="view-toggle" role="group" aria-label="Transcript view toggle">
+            <button id="formattedViewBtn" class="toggle-btn active" type="button">Formatted</button>
+            <button id="rawViewBtn" class="toggle-btn" type="button">Raw</button>
+          </div>
+        </div>
+        <textarea id="transcript" readonly placeholder="Your transcribed text will appear here..."></textarea>
+      </section>
+
+      <section class="history">
+        <div class="output-header">
+          <h2>History</h2>
+          <button id="clearHistoryBtn" class="toggle-btn" type="button">Clear</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
