@@ -1,0 +1,1 @@
+Build this project in a git repo in a presentable format so i want to restructure this whole project into a structured manner where i will be adding all the necessary files and all the necessary steps to so that anyone who is cloning this git repo will be able to use it 5pm no actually 6pm.

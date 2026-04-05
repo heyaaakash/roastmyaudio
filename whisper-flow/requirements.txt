@@ -1,0 +1,33 @@
+# Core
+numpy
+torch
+torchaudio
+transformers
+openai-whisper
+
+# Transcription Engine
+faster-whisper>=0.10.0
+whisperx>=3.1.1
+
+# macOS Application
+rumps>=0.4.0
+pynput>=1.7.7
+sounddevice>=0.5.0
+pyobjc-core
+pyobjc-framework-Cocoa
+pyobjc-framework-Quartz
+pyobjc-framework-ApplicationServices
+
+# Web Interface
+flask>=2.3.0
+flask-cors>=4.0.0
+
+# Utils & cleanup
+ollama>=0.1.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+pywebview>=5.1 # Used for the WebView main.py entry point
+
+# Audio utilities
+ffmpeg-python>=0.2.0
+av>=10.0.0

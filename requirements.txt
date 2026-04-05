@@ -1,0 +1,44 @@
+# OpenAI Whisper with All Local Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core ML & Speech Recognition
+openai-whisper>=20240314
+torch>=2.0.0
+torchaudio>=2.0.0
+transformers>=4.30.0
+
+# Transcription Engines
+faster-whisper>=0.10.0
+whisperx>=3.1.1
+
+# Web Framework
+Flask>=2.3.0
+Flask-CORS>=4.0.0
+
+# macOS Application
+PyObjC-core>=10.0
+PyObjC-framework-Cocoa>=10.0
+PyObjC-framework-Quartz>=10.0
+PyObjC-framework-ApplicationServices>=10.0
+rumps>=0.4.0
+pynput>=1.7.7
+sounddevice>=0.5.0
+
+# Advanced Features
+ollama>=0.1.0          # Local LLM integration (optional)
+requests>=2.31.0       # HTTP client
+python-dotenv>=1.0.0   # Environment config
+
+# Audio Processing
+ffmpeg-python>=0.2.0
+av>=10.0.0
+
+# Voice Activity Detection
+silero-vad>=5.0         # Silence trimming for faster transcription
+
+# Web View (for desktop app wrapper)
+pywebview>=5.1
+
+# Additional utilities
+numpy>=1.24.0
+scipy>=1.11.0
