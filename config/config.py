@@ -32,6 +32,10 @@ os.environ['XDG_CACHE_HOME'] = str(HUGGINGFACE_CACHE_DIR)
 
 # Whisper/HuggingFace model cache
 os.environ['HF_HOME'] = str(HUGGINGFACE_CACHE_DIR)
+HF_HOME = HUGGINGFACE_CACHE_DIR
+
+# Settings file
+SETTINGS_PATH = DATA_DIR / "settings.json"
 
 # Dictionary and history storage (moved from ~/.wispr_local to project)
 DICTIONARY_PATH = DATA_DIR / "dictionary.json"
