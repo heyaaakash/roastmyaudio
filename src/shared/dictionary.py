@@ -1,13 +1,14 @@
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Add config directory to path
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 if str(CONFIG_DIR) not in sys.path:
     sys.path.insert(0, str(CONFIG_DIR))
 
-from config import DICTIONARY_PATH
+from config import DICTIONARY_PATH  # noqa: E402
+
 
 def load() -> list[str]:
     """Load custom dictionary words."""

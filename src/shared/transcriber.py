@@ -17,9 +17,9 @@ CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 if str(CONFIG_DIR) not in sys.path:
     sys.path.insert(0, str(CONFIG_DIR))
 
-from config import MODELS_CACHE_DIR, DEFAULT_MODEL  # noqa: E402
-
 from faster_whisper import WhisperModel  # noqa: E402
+
+from config import DEFAULT_MODEL, MODELS_CACHE_DIR  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Available models

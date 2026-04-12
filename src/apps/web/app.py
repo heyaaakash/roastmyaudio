@@ -27,22 +27,21 @@ for _p in (str(CONFIG_DIR), str(SRC_DIR)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from config import TEMP_UPLOADS_DIR, FLASK_HOST, FLASK_PORT  # noqa: E402
+from config import FLASK_HOST, FLASK_PORT, TEMP_UPLOADS_DIR  # noqa: E402
+from shared.dictionary import as_prompt  # noqa: E402
+from shared.formatter import (  # noqa: E402
+    filter_hallucinations,
+    format_transcript,
+    format_transcript_strict,
+)
+from shared.history import save as save_history  # noqa: E402
 from shared.transcriber import (  # noqa: E402
-    get_installed_models,
     get_default_model_name,
-    get_model_by_name,
     get_inference_lock,
+    get_installed_models,
     get_preview_model_name,
     transcribe,
 )
-from shared.formatter import (  # noqa: E402
-    format_transcript,
-    format_transcript_strict,
-    filter_hallucinations,
-)
-from shared.dictionary import as_prompt  # noqa: E402
-from shared.history import save as save_history  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Flask app

@@ -8,7 +8,6 @@ Only available when AppKit (PyObjC) is installed on macOS.
 
 try:
     from AppKit import (
-        NSApp,
         NSBackingStoreBuffered,
         NSColor,
         NSEvent,
