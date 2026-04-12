@@ -184,7 +184,7 @@ class WhisperMenuBarApp(rumps.App):
         self._fast_commit_model_name: Optional[str] = None
 
         # Settings-backed state
-        self._selected_model: str = _settings.get("model", "turbo")
+        self._selected_model: str = _settings.get("model", "base")
         self._selected_language_label: str = _settings.get("language_label", "English")
         self._selected_language_code: Optional[str] = _settings.get("language", "en")
         self._llm_enabled: bool = _settings.get("llm_enabled", True)

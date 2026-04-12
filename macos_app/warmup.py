@@ -7,9 +7,9 @@ def load_models_async(on_complete=None):
     """Load both primary and preview models in background thread on launch."""
     def _load():
         try:
-            # 1. Warm up the primary model (turbo)
-            print("🚀 Warming up Whisper primary model (turbo)...")
-            primary_model = get_model_by_name("turbo")
+            # 1. Warm up the primary model (base)
+            print("🚀 Warming up Whisper primary model (base)...")
+            primary_model = get_model_by_name("base")
             silence = np.zeros(16000, dtype=np.float32)
             primary_model.transcribe(silence, language="en", verbose=False)
             

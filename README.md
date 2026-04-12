@@ -27,7 +27,7 @@ make setup     # creates .venv, installs deps — nothing outside this folder
 make run       # launches the menu bar app
 ```
 
-That's it. The first time you hold `Fn`, the model downloads to `cache/models/` (1.5 GB for turbo).
+That's it. The first time you hold `Fn`, the model downloads to `cache/models/` (140 MB for base).
 
 **Optional: pre-download models before first use**
 
@@ -91,7 +91,7 @@ Settings persist automatically in `data/settings.json` when changed from the men
 You can also override via environment variables:
 
 ```bash
-export WHISPER_MODEL=base       # default: turbo
+export WHISPER_MODEL=small      # default: base
 export OLLAMA_URL=http://localhost:11434/api/generate
 export OLLAMA_MODEL=llama3.2:1b
 ```
@@ -116,8 +116,8 @@ macOS will prompt for these automatically. If something breaks, go to **System S
 
 - macOS 12+ (Monterey or later)
 - Python 3.9–3.12
-- ~2 GB disk space for the default turbo model
-- 8 GB RAM recommended (16 GB for large-v3)
+- ~500 MB disk space for the default base model
+- 4 GB RAM recommended (16 GB for large-v3)
 
 ---
 

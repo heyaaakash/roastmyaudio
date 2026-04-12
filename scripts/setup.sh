@@ -91,11 +91,11 @@ echo ""
 echo ""
 echo "9️⃣  Optional: Pre-download models?"
 echo "   Models auto-download on first use, but pre-downloading saves time."
-read -p "   Download turbo and tiny.en now? (y/n) " -n 1 -r
+read -p "   Download base and tiny.en now? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "   Downloading models (this may take 5-10 minutes)..."
-    python3 "$PROJECT_ROOT/scripts/download_models.py" -m turbo tiny.en
+    python3 "$PROJECT_ROOT/scripts/download_models.py" -m base tiny.en
 fi
 
 # Verify setup

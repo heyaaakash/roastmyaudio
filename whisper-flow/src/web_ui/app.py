@@ -17,7 +17,7 @@ app = Flask(__name__)
 TEMP_AUDIO_DIR = Path(__file__).resolve().parent / "temp_uploads"
 TEMP_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_NAME = os.environ.get("WHISPER_MODEL", "turbo")
+MODEL_NAME = os.environ.get("WHISPER_MODEL", "base")
 MODEL_CACHE = {}
 MODEL_CACHE_LOCK = threading.Lock()
 MODEL_INFERENCE_LOCKS = {}

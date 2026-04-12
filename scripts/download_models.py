@@ -4,7 +4,7 @@ Download and cache Whisper models locally.
 Models are stored in cache/models/ within the project.
 
 Usage:
-    python3 scripts/download_models.py -m turbo tiny.en
+    python3 scripts/download_models.py -m base tiny.en
     python3 scripts/download_models.py -m all
     python3 scripts/download_models.py -m base --device cpu
 """

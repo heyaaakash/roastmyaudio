@@ -64,7 +64,7 @@ def get_installed_models() -> list[str]:
 
 
 def get_default_model_name() -> str:
-    return DEFAULT_MODEL if DEFAULT_MODEL in AVAILABLE_MODELS else "turbo"
+    return DEFAULT_MODEL if DEFAULT_MODEL in AVAILABLE_MODELS else "base"
 
 
 def get_preview_model_name(selected_model: Optional[str] = None) -> str:
@@ -121,7 +121,7 @@ def get_inference_lock(model_name: str) -> threading.Lock:
 # ---------------------------------------------------------------------------
 def transcribe(
     audio: np.ndarray,
-    model_name: str = "turbo",
+    model_name: str = "base",
     language: Optional[str] = "en",
     initial_prompt: Optional[str] = None,
     inference_lock: Optional[threading.Lock] = None,
@@ -217,7 +217,7 @@ def transcribe(
     return raw_text.strip()
 
 
-def warmup(model_name: str = "turbo") -> None:
+def warmup(model_name: str = "base") -> None:
     """
     Pre-load a model and run a silent transcription to warm up internal buffers.
     Call at app startup to avoid first-use latency.

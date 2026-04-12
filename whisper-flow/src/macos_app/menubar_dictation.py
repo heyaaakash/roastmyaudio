@@ -176,7 +176,7 @@ def trim_silence(audio: np.ndarray) -> Optional[np.ndarray]:
 
 def transcribe_with_timing(
     audio: np.ndarray,
-    model_name: str = "turbo",
+    model_name: str = "base",
     language: Optional[str] = "en",
     normalize_audio: bool = True,
 ) -> dict:

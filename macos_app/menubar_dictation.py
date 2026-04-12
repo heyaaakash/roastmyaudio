@@ -191,7 +191,7 @@ def trim_silence(audio: np.ndarray) -> Optional[np.ndarray]:
 
 def transcribe_with_timing(
     audio: np.ndarray,
-    model_name: str = "turbo",
+    model_name: str = "base",
     language: Optional[str] = "en",
     normalize_audio: bool = True,
 ) -> dict:
@@ -556,7 +556,7 @@ class WhisperMenuBarApp(rumps.App):
         self._app_monitor = AppMonitor()
 
         installed_models = get_installed_models()
-        self._selected_model = "turbo"
+        self._selected_model = "base"
         self._keyboard = keyboard.Controller()
         self._model_items = {}
 
