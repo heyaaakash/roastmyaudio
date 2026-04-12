@@ -170,7 +170,7 @@ load_models_async(on_complete)  # Background thread
 ```
 
 Loads:
-1. Primary model (turbo) for main transcription
+1. Primary model (base) for main transcription
 2. Preview model (tiny.en) for live preview
 3. Ollama model for text cleanup (if available)
 
@@ -264,7 +264,7 @@ Handles:
 Downloads Whisper models to `cache/models/`
 
 ```bash
-python3 scripts/download_models.py -m turbo tiny.en
+python3 scripts/download_models.py -m base tiny.en
 python3 scripts/download_models.py -m all  # All models
 ```
 
@@ -334,7 +334,7 @@ Cleaned Transcript
 cache/
 ├── models/                      # Whisper model files
 │   ├── tiny.en.pt              # ~40MB
-│   ├── turbo.pt                # ~1.5GB
+│   ├── base.pt                 # ~140MB
 │   └── ... (other models)
 ├── cache/                       # HuggingFace artifacts
 │   ├── huggingface/
@@ -456,7 +456,7 @@ python3 -c "import whisper; print(whisper.available_models())"
 
 - **Tiny model**: ~40MB
 - **Base model**: ~140MB
-- **Turbo model**: ~1.5GB
+- **Base model**: ~140MB
 - **Total best case**: ~2GB
 
 ### Latency Targets
@@ -466,7 +466,7 @@ python3 -c "import whisper; print(whisper.available_models())"
 | Model load | First time | ~3-10s (download) |
 | Model load | Cached | <1s |
 | Warmup | Startup | ~5-10s |
-| Transcribe (turbo) | 1 min audio | ~10-20s |
+| Transcribe (base) | 1 min audio | ~2-5s |
 | LLM cleanup | Avg | ~1-3s |
 | Text inject | OS call | ~50ms |
 

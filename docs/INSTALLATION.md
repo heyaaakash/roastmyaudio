@@ -87,8 +87,8 @@ This script handles:
 Models download automatically on first use, but pre-downloading saves waiting time:
 
 ```bash
-# Download turbo (recommended) and tiny.en (for live preview)
-python3 scripts/download_models.py -m turbo tiny.en
+# Download base (recommended) and tiny.en (for live preview)
+python3 scripts/download_models.py -m base tiny.en
 
 # Or download all models (requires ~30GB)
 python3 scripts/download_models.py -m all
@@ -107,7 +107,7 @@ MODELS_CACHE_DIR = CACHE_DIR / "models"
 TEMP_UPLOADS_DIR = DATA_DIR / "temp_uploads"
 
 # Default model
-DEFAULT_MODEL = "turbo"  # or "base", "small", etc.
+DEFAULT_MODEL = "base"  # or "small", etc.
 
 # Ollama settings (if using LLM cleanup)
 OLLAMA_URL = "http://localhost:11434/api/generate"

@@ -20,7 +20,7 @@ SETTINGS_PATH = DATA_DIR / "settings.json"
 
 # Default values — the app works without a settings file
 DEFAULTS: dict[str, Any] = {
-    "model": "turbo",
+    "model": "base",
     "language": "en",
     "language_label": "English",
     "hotkey": "fn",          # "fn" or "ctrl_option_d"

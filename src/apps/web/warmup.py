@@ -21,14 +21,14 @@ from src.shared.transcriber import get_inference_lock, get_model_by_name  # noqa
 
 
 def load_models_async(on_complete: Optional[Callable] = None) -> None:
-    """Pre-load turbo + tiny.en models and warm up Ollama in a daemon thread."""
+    """Pre-load base + tiny.en models and warm up Ollama in a daemon thread."""
 
     def _load():
         silence = np.zeros(16_000, dtype=np.float32)
         try:
-            print("Warming up Whisper 'turbo'...")
-            m = get_model_by_name("turbo")
-            with get_inference_lock("turbo"):
+            print("Warming up Whisper 'base'...")
+            m = get_model_by_name("base")
+            with get_inference_lock("base"):
                 segs, _ = m.transcribe(silence, language="en", vad_filter=False)
                 list(segs)
 

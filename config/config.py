@@ -44,7 +44,7 @@ LAST_RECORDING_PATH = RUNTIME_DIR / "last_recording.wav"
 LAST_PROCESSED_PATH = RUNTIME_DIR / "last_processed.txt"
 
 # Application settings
-DEFAULT_MODEL = "turbo"
+DEFAULT_MODEL = "base"
 SAMPLE_RATE = 16000
 CHANNELS = 1
 

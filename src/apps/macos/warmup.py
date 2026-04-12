@@ -26,7 +26,7 @@ from src.shared.transcriber import get_inference_lock, get_model_by_name  # noqa
 
 def load_models_async(on_complete: Optional[Callable] = None) -> None:
     """
-    Pre-load the primary (turbo) and preview (tiny.en) Whisper models, plus
+    Pre-load the primary (base) and preview (tiny.en) Whisper models, plus
     warm up the Ollama LLM. Runs in a daemon thread so it never blocks the UI.
 
     Args:
@@ -38,9 +38,9 @@ def load_models_async(on_complete: Optional[Callable] = None) -> None:
 
         try:
             # 1. Primary transcription model
-            print("Warming up Whisper 'turbo'...")
-            primary = get_model_by_name("turbo")
-            lock = get_inference_lock("turbo")
+            print("Warming up Whisper 'base'...")
+            primary = get_model_by_name("base")
+            lock = get_inference_lock("base")
             with lock:
                 segs, _ = primary.transcribe(silence, language="en", vad_filter=False)
                 list(segs)
