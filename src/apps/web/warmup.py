@@ -16,8 +16,8 @@ for _p in (str(PROJECT_ROOT), str(PROJECT_ROOT / "config")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from src.shared.transcriber import get_model_by_name, get_inference_lock  # noqa: E402
 from src.shared.llm_cleanup import warmup as ollama_warmup  # noqa: E402
+from src.shared.transcriber import get_inference_lock, get_model_by_name  # noqa: E402
 
 
 def load_models_async(on_complete: Optional[Callable] = None) -> None:

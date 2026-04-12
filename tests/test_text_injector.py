@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -11,7 +11,7 @@ _APPKIT_MOCK = MagicMock()
 _QUARTZ_MOCK = MagicMock()
 
 with patch.dict("sys.modules", {"AppKit": _APPKIT_MOCK, "Quartz": _QUARTZ_MOCK}):
-    from src.shared.text_injector import _is_pasteable, inject  # noqa: E402
+    from src.shared.text_injector import _is_pasteable  # noqa: E402
 
 
 class TestIsPasteable:

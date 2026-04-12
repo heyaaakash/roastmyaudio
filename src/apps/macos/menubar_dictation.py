@@ -4,20 +4,19 @@ WhisperFlow — macOS Menu Bar App.
 Hold Fn (or Ctrl+Option+D) to record → release to transcribe and paste.
 """
 
+import logging
 import os
 import subprocess
 import sys
 import threading
 import time
-import webbrowser
 import warnings
-import logging
+import webbrowser
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import rumps
-import sounddevice as sd
 from pynput import keyboard
 
 warnings.filterwarnings("ignore", message=".*upgraded your loaded checkpoint.*")
@@ -38,7 +37,6 @@ for _p in (str(PROJECT_ROOT), str(CONFIG_DIR)):
 # ---------------------------------------------------------------------------
 try:
     from AppKit import (
-        NSApp,
         NSEvent,
         NSEventMaskFlagsChanged,
         NSEventModifierFlagFunction,
@@ -77,28 +75,32 @@ _old_stderr = os.dup(2)
 _devnull = os.open(os.devnull, os.O_WRONLY)
 os.dup2(_devnull, 2)
 try:
-    from src.shared.transcriber import (
-        get_installed_models,
-        get_model_by_name,
-        get_default_model_name,
-        get_preview_model_name,
-        transcribe as _transcribe_audio,
-    )
-    from src.shared.formatter import format_transcript, filter_hallucinations
-    from src.shared.llm_cleanup import clean, warmup as llm_warmup
-    from src.shared.text_injector import AppMonitor, inject, _write_clipboard
-    from src.shared.dictionary import load as dict_load, add as dict_add, as_prompt
-    from src.shared.history import save as history_save, load as history_load
-    from src.shared.settings import load as settings_load, set as settings_set
-    from src.apps.macos.hud_overlay import DictationOverlay, APPKIT_AVAILABLE as _HUD_OK
     from src.apps.macos.audio_recorder import (
-        AudioRecorder,
-        list_input_devices,
-        get_default_input_device,
         SAMPLE_RATE,
+        AudioRecorder,
+        get_default_input_device,
+        list_input_devices,
         normalize_audio,
     )
+    from src.apps.macos.hud_overlay import DictationOverlay
     from src.apps.macos.warmup import load_models_async
+    from src.shared.dictionary import add as dict_add
+    from src.shared.dictionary import as_prompt
+    from src.shared.dictionary import load as dict_load
+    from src.shared.formatter import format_transcript
+    from src.shared.history import load as history_load
+    from src.shared.history import save as history_save
+    from src.shared.llm_cleanup import clean
+    from src.shared.settings import load as settings_load
+    from src.shared.settings import set as settings_set
+    from src.shared.text_injector import AppMonitor, _write_clipboard, inject
+    from src.shared.transcriber import (
+        get_installed_models,
+        get_preview_model_name,
+    )
+    from src.shared.transcriber import (
+        transcribe as _transcribe_audio,
+    )
 finally:
     os.dup2(_old_stderr, 2)
     os.close(_devnull)

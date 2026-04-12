@@ -21,7 +21,7 @@ TEMP_UPLOADS_DIR = DATA_DIR / "temp_uploads"
 RUNTIME_DIR = DATA_DIR / "runtime"
 
 # Create directories if they don't exist
-for directory in [CACHE_DIR, MODELS_CACHE_DIR, HUGGINGFACE_CACHE_DIR, 
+for directory in [CACHE_DIR, MODELS_CACHE_DIR, HUGGINGFACE_CACHE_DIR,
                   TEMP_UPLOADS_DIR, RUNTIME_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 

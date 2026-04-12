@@ -2,11 +2,11 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.shared.llm_cleanup import clean, build_prompt, get_tone  # noqa: E402
+from src.shared.llm_cleanup import build_prompt, clean, get_tone  # noqa: E402
 
 
 class TestGetTone:

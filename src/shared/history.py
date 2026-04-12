@@ -1,14 +1,14 @@
 import json
-from pathlib import Path
-from datetime import datetime
 import sys
+from datetime import datetime
+from pathlib import Path
 
 # Add config directory to path
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 if str(CONFIG_DIR) not in sys.path:
     sys.path.insert(0, str(CONFIG_DIR))
 
-from config import HISTORY_PATH
+from config import HISTORY_PATH  # noqa: E402
 
 MAX_ENTRIES = 5
 

@@ -2,13 +2,13 @@
 
 import json
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.shared.settings import DEFAULTS, load, save, get, set as settings_set  # noqa: E402
+from src.shared.settings import DEFAULTS, get, load, save  # noqa: E402
+from src.shared.settings import set as settings_set
 
 
 def _temp_settings_path(tmp_path: Path) -> Path:
