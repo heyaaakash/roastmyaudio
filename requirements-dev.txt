@@ -1,0 +1,6 @@
+# WhisperFlow — Development dependencies
+# Install with: pip install -r requirements-dev.txt
+
+ruff>=0.4.0
+pytest>=8.0.0
+pytest-mock>=3.12.0

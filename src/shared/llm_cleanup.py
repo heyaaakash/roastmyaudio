@@ -4,19 +4,19 @@
 # Then applies rule-based formatting for structure and polish
 # ==========================================
 
-import requests
-import json
-import time
-import sys
 import re
+import sys
+import time
 from pathlib import Path
+
+import requests
 
 # Add config directory to path
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 if str(CONFIG_DIR) not in sys.path:
     sys.path.insert(0, str(CONFIG_DIR))
 
-from config import OLLAMA_URL, OLLAMA_MODEL
+from config import OLLAMA_MODEL, OLLAMA_URL  # noqa: E402
 
 CONTEXT_PROMPTS = {
     "default":      "professional and clear",
@@ -67,11 +67,11 @@ TRANSCRIPT:
 def clean(raw_text: str, app_name: str = None) -> tuple[str, int]:
     """
     Clean raw transcription using advanced Ollama LLM.
-    
+
     Args:
         raw_text: Raw voice transcript
         app_name: Target application name (determines tone)
-    
+
     Returns:
         Tuple of (cleaned_text, latency_ms)
     """
@@ -95,7 +95,7 @@ def clean(raw_text: str, app_name: str = None) -> tuple[str, int]:
         resp.raise_for_status()
         result = resp.json()
         cleaned = result["response"].strip()
-        
+
         # Remove meta-commentary preambles the model might add
         preamble_patterns = [
             r"^here is the cleaned.*?:\s*",
@@ -107,15 +107,15 @@ def clean(raw_text: str, app_name: str = None) -> tuple[str, int]:
             r"^cleaned text.*?:\s*",
             r"^cleaned.*?:\s*",
         ]
-        
+
         for pattern in preamble_patterns:
             cleaned = re.sub(pattern, "", cleaned, flags=re.IGNORECASE)
-        
+
         # Detect if model rewrote the content
         # Compare word lists (case-insensitive, excluding small words)
         raw_words = set(w.lower() for w in raw_text.split() if len(w) > 3)
         cleaned_words = set(w.lower() for w in cleaned.split() if len(w) > 3)
-        
+
         # If word lists are too different, model probably rewrote it
         if raw_words and cleaned_words:
             overlap = len(raw_words & cleaned_words) / len(raw_words)
@@ -123,7 +123,7 @@ def clean(raw_text: str, app_name: str = None) -> tuple[str, int]:
             if overlap < 0.70:
                 print(f"⚠️  Detected content rewrite (only {overlap*100:.0f}% word overlap) — returning raw transcript")
                 return raw_text, 0
-        
+
         # Check if model refused or generated meta-commentary
         refusal_patterns = [
             "i cannot",
@@ -138,12 +138,12 @@ def clean(raw_text: str, app_name: str = None) -> tuple[str, int]:
             "i appreciate",
             "please note"
         ]
-        
+
         # If refusal detected, return raw text with no processing
         if any(pattern in cleaned.lower() for pattern in refusal_patterns):
-            print(f"⚠️  Model refused processing — returning raw transcript")
+            print("⚠️  Model refused processing — returning raw transcript")
             return raw_text, 0
-        
+
         latency_ms = int((time.time() - t0) * 1000)
         return cleaned, latency_ms
     except requests.exceptions.ConnectionError:

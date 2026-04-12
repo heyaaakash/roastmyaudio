@@ -21,7 +21,7 @@ TEMP_UPLOADS_DIR = DATA_DIR / "temp_uploads"
 RUNTIME_DIR = DATA_DIR / "runtime"
 
 # Create directories if they don't exist
-for directory in [CACHE_DIR, MODELS_CACHE_DIR, HUGGINGFACE_CACHE_DIR, 
+for directory in [CACHE_DIR, MODELS_CACHE_DIR, HUGGINGFACE_CACHE_DIR,
                   TEMP_UPLOADS_DIR, RUNTIME_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -32,6 +32,10 @@ os.environ['XDG_CACHE_HOME'] = str(HUGGINGFACE_CACHE_DIR)
 
 # Whisper/HuggingFace model cache
 os.environ['HF_HOME'] = str(HUGGINGFACE_CACHE_DIR)
+HF_HOME = HUGGINGFACE_CACHE_DIR
+
+# Settings file
+SETTINGS_PATH = DATA_DIR / "settings.json"
 
 # Dictionary and history storage (moved from ~/.wispr_local to project)
 DICTIONARY_PATH = DATA_DIR / "dictionary.json"
