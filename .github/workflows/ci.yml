@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Tests & Lint
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install only the pure-Python / cross-platform subset needed for tests
+          pip install faster-whisper numpy requests pytest pytest-mock ruff
+
+      - name: Lint with ruff
+        run: ruff check src/ config/ tests/
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+        env:
+          # Point cache dirs into a temp location so tests don't create real model directories
+          HF_HOME: /tmp/whisperflow-ci-cache
+          HOME_CACHE_DIR: /tmp/whisperflow-ci-models
