@@ -1,44 +1,39 @@
-# OpenAI Whisper with All Local Dependencies
+# WhisperFlow — Python dependencies
 # Install with: pip install -r requirements.txt
 
-# Core ML & Speech Recognition
-openai-whisper>=20240314
+# ── Core transcription ────────────────────────────────────────────────────
+# faster-whisper is 4-8x faster than openai-whisper with int8 quantization
+faster-whisper>=1.0.0
+
+# ── ML backend ───────────────────────────────────────────────────────────
 torch>=2.0.0
-torchaudio>=2.0.0
-transformers>=4.30.0
+numpy>=1.24.0
 
-# Transcription Engines
-faster-whisper>=0.10.0
-whisperx>=3.1.1
+# ── Audio capture & processing ───────────────────────────────────────────
+sounddevice>=0.5.0
+scipy>=1.11.0
 
-# Web Framework
+# ── Web framework ─────────────────────────────────────────────────────────
 Flask>=2.3.0
 Flask-CORS>=4.0.0
 
-# macOS Application
+# ── macOS integration ────────────────────────────────────────────────────
 PyObjC-core>=10.0
 PyObjC-framework-Cocoa>=10.0
 PyObjC-framework-Quartz>=10.0
 PyObjC-framework-ApplicationServices>=10.0
 rumps>=0.4.0
 pynput>=1.7.7
-sounddevice>=0.5.0
 
-# Advanced Features
-ollama>=0.1.0          # Local LLM integration (optional)
-requests>=2.31.0       # HTTP client
-python-dotenv>=1.0.0   # Environment config
+# ── Optional: local LLM cleanup ──────────────────────────────────────────
+# Requires a running Ollama server: https://ollama.ai
+requests>=2.31.0
 
-# Audio Processing
-ffmpeg-python>=0.2.0
-av>=10.0.0
+# ── Config ────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
 
-# Voice Activity Detection
-silero-vad>=5.0         # Silence trimming for faster transcription
-
-# Web View (for desktop app wrapper)
-pywebview>=5.1
-
-# Additional utilities
-numpy>=1.24.0
-scipy>=1.11.0
+# ── Dev tools (install via: pip install -r requirements-dev.txt) ──────────
+# Listed here for reference only; not required for running the app.
+# ruff>=0.4.0
+# pytest>=8.0.0
+# pytest-mock>=3.12.0

@@ -1,50 +1,51 @@
-import threading
-import numpy as np
+"""
+Background model warmup for the Flask web app.
+
+Pre-loads Whisper models and warms up Ollama at startup.
+"""
+
 import sys
+import threading
 from pathlib import Path
+from typing import Callable, Optional
 
-# Add source directory to path
-SRC_DIR = Path(__file__).resolve().parent.parent
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
+import numpy as np
 
-# Import from shared modules
-from shared.llm_cleanup import warmup as ollama_warmup
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+for _p in (str(PROJECT_ROOT), str(PROJECT_ROOT / "config")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-def load_models_async(on_complete=None):
-    """
-    Load both primary and preview models in background thread on launch.
-    
-    Args:
-        on_complete: Callback function to call when loading is complete
-    """
+from src.shared.transcriber import get_model_by_name, get_inference_lock  # noqa: E402
+from src.shared.llm_cleanup import warmup as ollama_warmup  # noqa: E402
+
+
+def load_models_async(on_complete: Optional[Callable] = None) -> None:
+    """Pre-load turbo + tiny.en models and warm up Ollama in a daemon thread."""
+
     def _load():
+        silence = np.zeros(16_000, dtype=np.float32)
         try:
-            # Import here to avoid circular imports
-            from apps.web.app import get_model_by_name
-            
-            # 1. Warm up the primary model (turbo)
-            print("🚀 Warming up Whisper primary model (turbo)...")
-            primary_model = get_model_by_name("turbo")
-            silence = np.zeros(16000, dtype=np.float32)
-            primary_model.transcribe(silence, language="en", verbose=False)
-            
-            # 2. Warm up the live preview model (tiny.en)
-            print("🚀 Warming up Whisper preview model (tiny.en)...")
-            preview_model = get_model_by_name("tiny.en")
-            preview_model.transcribe(silence, language="en", verbose=False)
-            
-            # 3. Warm up the Ollama LLM
-            print("🚀 Warming up Ollama LLM cleanup...")
+            print("Warming up Whisper 'turbo'...")
+            m = get_model_by_name("turbo")
+            with get_inference_lock("turbo"):
+                segs, _ = m.transcribe(silence, language="en", vad_filter=False)
+                list(segs)
+
+            print("Warming up Whisper 'tiny.en'...")
+            mp = get_model_by_name("tiny.en")
+            with get_inference_lock("tiny.en"):
+                segs, _ = mp.transcribe(silence, language="en", vad_filter=False)
+                list(segs)
+
+            print("Warming up Ollama LLM...")
             ollama_warmup()
-            
-            print("✅ All models pre-loaded on GPU and ready.")
+
+            print("Web UI models ready.")
+        except Exception as exc:  # noqa: BLE001
+            print(f"Warmup warning: {exc}")
+        finally:
             if on_complete:
                 on_complete()
-        except Exception as e:
-            print(f"⚠️  Warmup failed: {e}")
-            if on_complete:
-                on_complete()
-    
-    t = threading.Thread(target=_load, daemon=True)
-    t.start()
+
+    threading.Thread(target=_load, daemon=True).start()
