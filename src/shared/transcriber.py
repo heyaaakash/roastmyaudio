@@ -17,7 +17,7 @@ CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 if str(CONFIG_DIR) not in sys.path:
     sys.path.insert(0, str(CONFIG_DIR))
 
-from faster_whisper import WhisperModel  # noqa: E402
+from faster_whisper import BatchedInferencePipeline, WhisperModel  # noqa: E402
 
 from config import DEFAULT_MODEL, MODELS_CACHE_DIR  # noqa: E402
 
@@ -53,7 +53,7 @@ _HALLUCINATION_BLACKLIST = frozenset([
 # ---------------------------------------------------------------------------
 # Thread-safe model cache
 # ---------------------------------------------------------------------------
-_MODEL_CACHE: dict[str, WhisperModel] = {}
+_MODEL_CACHE: dict[str, BatchedInferencePipeline] = {}
 _MODEL_CACHE_LOCK = threading.Lock()
 _INFERENCE_LOCKS: dict[str, threading.Lock] = {}
 
@@ -79,7 +79,7 @@ def get_preview_model_name(selected_model: Optional[str] = None) -> str:
     return installed[0] if installed else "tiny.en"
 
 
-def get_model_by_name(model_name: str) -> WhisperModel:
+def get_model_by_name(model_name: str) -> BatchedInferencePipeline:
     """
     Load (or return cached) a faster-whisper model. Thread-safe.
 
@@ -95,12 +95,13 @@ def get_model_by_name(model_name: str) -> WhisperModel:
     with _MODEL_CACHE_LOCK:
         if name not in _MODEL_CACHE:
             print(f"Loading Whisper model '{name}' (cpu / int8)...")
-            _MODEL_CACHE[name] = WhisperModel(
+            base_model = WhisperModel(
                 name,
                 device="cpu",
                 compute_type="int8",
                 download_root=str(MODELS_CACHE_DIR),
             )
+            _MODEL_CACHE[name] = BatchedInferencePipeline(model=base_model)
         if name not in _INFERENCE_LOCKS:
             _INFERENCE_LOCKS[name] = threading.Lock()
 
@@ -176,6 +177,7 @@ def transcribe(
         compression_ratio_threshold=2.4,
         condition_on_previous_text=False,
         vad_filter=True,
+        batch_size=16,
         vad_parameters={"threshold": 0.5, "min_silence_duration_ms": 300},
     )
 
