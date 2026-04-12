@@ -34,9 +34,9 @@ wheels/
 .DS_Store
 
 # Project-specific (kept local)
-cache/          # Whisper models and huggingface cache - keep local!
+cache/
 data/
-.env            # Environment configuration
+.env
 
 # Temporary files
 *.tmp
