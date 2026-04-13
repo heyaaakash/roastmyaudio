@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Whisper Flow - Setup Script
+# RoastMyAudio - Setup Script
 # Works on macOS (tested on Apple Silicon)
 
 set -e
 
-echo "🎙️ Setting up Whisper Flow..."
+echo "🎙️ Setting up RoastMyAudio..."
 
 # 1. Check for Prerequisites
 echo "🔍 Checking prerequisites..."

@@ -17,7 +17,7 @@ def download_faster_whisper_model(model_name: str, cache_dir: str = None):
         print(f"❌ Error downloading Faster-Whisper model: {e}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Whisper Flow - Model Downloader")
+    parser = argparse.ArgumentParser(description="RoastMyAudio - Model Downloader")
     parser.add_argument("--model", type=str, default="turbo", help="Model name (tiny, base, turbo, etc.)")
     parser.add_argument("--cache-dir", type=str, help="Directory to store models")
     

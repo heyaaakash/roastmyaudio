@@ -1,4 +1,4 @@
-# 🎙️ Whisper Flow
+# 🎙️ RoastMyAudio
 
 A professional macOS dictation tool and web interface powered by **OpenAI Whisper**, **Faster-Whisper**, and **WhisperX**. It features real-time transcription, LLM-based text cleanup, and seamless macOS integration.
 
@@ -19,7 +19,7 @@ A professional macOS dictation tool and web interface powered by **OpenAI Whispe
 ## 📂 Project Structure
 
 ```text
-whisper-flow/
+roastmyaudio/
 ├── src/
 │   ├── macos_app/          # macOS Menu Bar Application
 │   │   ├── main.py         # App entry point
@@ -47,7 +47,7 @@ Clone the repository and run the setup script:
 
 ```bash
 git clone <your-repo-url>
-cd whisper-flow
+cd roastmyaudio
 bash scripts/setup.sh
 ```
 

@@ -153,8 +153,8 @@ cython_debug/
 .DS_Store
 
 # Project specific
-whisper-flow/src/macos_app/runtime/
-whisper-flow/src/web_ui/temp_uploads/
+roastmyaudio/src/macos_app/runtime/
+roastmyaudio/src/web_ui/temp_uploads/
 *.audio
 *.webm
 *.mp3
