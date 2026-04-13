@@ -14,23 +14,46 @@ Thank you for your interest in contributing! This document covers everything you
 
 ---
 
-## Development setup
+## Getting Started
+
+We're excited to have you contribute! Whether it's bug fixes, features, documentation, or translations, your help is welcome.
+
+### Development setup
 
 Everything runs inside the project directory — nothing is installed system-wide.
 
 ```bash
-git clone https://github.com/your-username/open-whisperflow
+# Fork the repo on GitHub, then clone your fork
+git clone https://github.com/YOUR-USERNAME/open-whisperflow.git
 cd open-whisperflow
 
-make setup   # creates .venv, installs all deps
-make run     # start the menu bar app
-make web     # start the web UI
+# Create a virtual environment and install dependencies
+make setup
+
+# Start the menu bar app
+make run
+
+# Or start the web UI
+make web
 ```
 
-To pre-download models:
+To pre-download models (optional):
 
 ```bash
 make download
+```
+
+### System Requirements
+
+- **macOS, Windows, or Linux**
+- **Python 3.9+**
+- **Git**
+- **2 GB free disk space** (for models)
+
+On macOS specifically, you'll need Xcode Command Line Tools:
+
+```bash
+xcode-select --install
 ```
 
 ---
@@ -96,63 +119,270 @@ Or run a specific test file:
 .venv/bin/pytest tests/test_formatter.py -v
 ```
 
-**Guidelines:**
-- Add tests for any new utility function in `src/shared/`
-- Mock external services (Ollama, Quartz) — tests must pass on CI without a running Mac
-- Use `pytest-mock` for mocking
+**Testing guidelines:**
+- Add tests for any **new utility function** in `src/shared/` before submitting a PR
+- **Mock external services** (Ollama, Quartz) — tests must pass on CI without a running macOS system
+- Use `pytest-mock` for mocking:
+  ```python
+  def test_ollama_fallback(mocker):
+      mocker.patch("src.shared.llm_cleanup.requests.post", side_effect=Exception("Ollama offline"))
+      result = clean_text("test", "mail")
+      assert result == "test"  # Should fallback to raw text
+  ```
+- All tests must pass locally before submitting a PR:
+  ```bash
+  make test && make lint
+  ```
 
 ---
 
 ## Code style
 
-We use [ruff](https://github.com/astral-sh/ruff) for linting:
+We use [ruff](https://github.com/astral-sh/ruff) for linting and code quality:
 
 ```bash
-make lint        # check for issues
-make lint-fix    # auto-fix where possible
+make lint        # check for style issues
 ```
 
-Key rules:
-- Line length: 100 characters
-- Imports: sorted (ruff handles this automatically)
-- No unused imports
-- Type annotations encouraged but not required
+Key conventions:
+- **Line length:** 100 characters
+- **Imports:** Automatically sorted (ruff handles this)
+- **Type hints:** Encouraged for public functions
+- **Docstrings:** Use for complex functions (especially in `src/shared/`)
+- **Comments:** Explain *why*, not *what* (code should be self-documenting)
+
+Before submitting a PR, ensure your code is clean:
+
+```bash
+ruff check src/ config/  # Check for issues
+ruff format src/ config/ # Auto-format
+```
 
 ---
 
-## Submitting a pull request
+## Submitting a Pull Request
 
-1. Make sure `make test` and `make lint` both pass
-2. Keep the PR description concise — what changed and why
-3. Reference any related issues (`Fixes #123`)
-4. One logical change per PR — avoid bundling unrelated fixes
+### Before you submit:
 
-**PR checklist:**
-- [ ] Tests pass (`make test`)
-- [ ] Linter is clean (`make lint`)
-- [ ] All paths stay inside the project directory (no `~/.cache`, no system installs)
-- [ ] Models still cache to `cache/models/`
-- [ ] No new dependencies added without discussion
+1. **Create a feature branch:**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Test locally:**
+   ```bash
+   make test && make lint
+   ```
+
+3. **Commit with clear messages:**
+   ```bash
+   git commit -m "Brief description of change"
+   ```
+   - Use imperative mood ("Add feature" not "Added feature")
+   - Reference issues: "Fixes #123" or "Related to #456"
+   - Keep commits focused on a single logical change
+
+4. **Push and open a PR:**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+### PR Requirements
+
+Before submitting, ensure:
+
+- [ ] Tests pass: `make test`
+- [ ] Code is clean: `make lint`
+- [ ] No new dependencies added (discuss first if needed)
+- [ ] All file paths stay inside project directory (no `~/.cache`, no system installs)
+- [ ] Documentation updated (if applicable)
+- [ ] PR title is descriptive
+- [ ] PR description explains *why* this change is needed
+
+### PR Checklist Template
+
+Include this in your PR description:
+
+```markdown
+## What does this PR do?
+Brief description of changes.
+
+## Why?
+What problem does this solve?
+
+## Testing
+How can reviewers test this?
+
+## Related Issues
+Fixes #123
+```
+
+### Code Review
+
+We review PRs promptly. Common feedback points:
+
+- **Performance:** Does this impact startup time or memory?
+- **Privacy:** Does this send data outside the project folder?
+- **Compatibility:** Does this work on all supported Python versions?
+- **Tests:** Are there test cases covering the new code?
+- **Documentation:** Is the change documented (docstrings, README, etc.)?
+
+It's normal to have back-and-forth on a PR — we're here to help!
 
 ---
 
-## Reporting issues
+## Reporting Issues
 
-Use [GitHub Issues](https://github.com/your-username/open-whisperflow/issues) with the appropriate template:
+Found a bug or have a feature idea? Please open a [GitHub Issue](https://github.com/open-whisperflow/open-whisperflow/issues).
 
-- **Bug report** — something isn't working
-- **Feature request** — an idea for improvement
+### Bug Reports
 
-**Before opening a bug report:**
-1. Check existing issues to avoid duplicates
-2. Run `make test` to rule out a setup problem
-3. Include your macOS version, Python version, and the exact error message
+Include:
+- **OS & Python version:** `python3 --version` and your OS
+- **Steps to reproduce:** Clear steps that trigger the bug
+- **Actual vs. expected behavior**
+- **Error message/traceback** (if applicable)
+- **Your Whisper model and Python version**
+
+**Example:**
+
+```
+## Environment
+- macOS 13.5
+- Python 3.11.2
+- Whisper model: base
+
+## Steps to reproduce
+1. Run `make run`
+2. Hold Fn key
+3. Speak "test this out"
+4. Release Fn
+
+## Expected
+Text pasted into active app
+
+## Actual
+Error in terminal: "AudioInterface: Failed to initialize..."
+
+## Traceback
+[paste full error here]
+```
+
+### Feature Requests
+
+Describe:
+- **What you want to achieve:** The use case or problem
+- **Proposed solution:** Your idea (if you have one)
+- **Why it matters:** Why would this help other users?
+
+**Example:**
+
+```
+## Use Case
+I dictate long documents and want to pause/resume without stopping the app.
+
+## Proposed Solution
+Add a "pause" hotkey separate from the recording hotkey.
+
+## Why
+Currently I have to release Fn and wait for transcription, then hold again to continue. Native pause would be faster.
+```
+
+### Before Opening an Issue
+
+1. **Check existing issues** — Your issue might already be reported or fixed
+2. **Search closed issues** — The fix might be in a newer version
+3. **Verify your setup** — Run `make test` to rule out a broken install
+4. **Check docs** — Your question might be answered in [docs/INSTALLATION.md](docs/INSTALLATION.md)
+5. **Try troubleshooting** — See [README.md troubleshooting section](../README.md#troubleshooting)
 
 ---
 
-## Architecture notes
+## Architecture & Key Design Decisions
 
-- **Self-contained by design.** Everything — models, cache, history, settings — lives inside the project folder. Nothing is written to `~/.cache` or any system location. This is enforced by `config/config.py`.
-- **faster-whisper, not openai-whisper.** We use `faster-whisper` exclusively for 4-8x speed and `int8` quantization.
-- **No ctranslate2 MPS on macOS.** Apple Silicon users benefit from ARM NEON via `compute_type="int8"` on CPU. MPS is not supported by ctranslate2.
-- **Optional Ollama.** LLM cleanup gracefully falls back to raw transcription if Ollama isn't running.
+### Self-Contained by Design
+Everything — models, cache, history, settings — lives inside the project folder. Nothing is written to `~/.cache`, `~/.config`, or any system location. This is enforced by `config/config.py`.
+
+This approach ensures:
+- **Privacy:** All data stays in the project folder
+- **Portability:** Works without system configuration
+- **Cleanup:** Simply delete the folder to remove everything
+
+### Why faster-whisper, not openai-whisper?
+
+We use `faster-whisper` exclusively because:
+- **4-8x faster** than `openai-whisper` (using `int8` quantization)
+- **Lower memory** usage on typical machines
+- **Better macOS support** (especially Apple Silicon)
+
+### Apple Silicon (M1/M2/M3) Note
+
+`ctranslate2` (used by faster-whisper) doesn't support Metal Performance Shaders (MPS) on Apple Silicon. Instead:
+- We use `compute_type="int8"` on CPU for ARM NEON optimization
+- This is still much faster than `openai-whisper`
+- Fallback: Use `compute_type="float32"` for maximum compatibility (slower but reliable)
+
+### Optional Ollama Integration
+
+LLM cleanup gracefully falls back to raw transcription if Ollama isn't running:
+
+```python
+try:
+    cleaned = clean_text(raw_transcription, app_context)
+except requests.exceptions.ConnectionError:
+    cleaned = raw_transcription  # Fallback
+```
+
+This keeps the core experience working even without the optional Ollama server.
+
+---
+
+## Areas for Contribution
+
+### 🎯 High Impact (especially welcome!)
+
+- **Performance improvements** — Faster initialization, reduced memory usage
+- **macOS fixes** — Accessibility permissions, hotkey reliability
+- **Web UI enhancements** — Mobile responsiveness, copy-paste UX
+- **Language support** — Translations, language-specific formatting
+- **Testing** — More test coverage, especially edge cases
+- **Documentation** — Clearer guides, troubleshooting, use case examples
+
+### 📚 Documentation
+
+- Writing guides for specific use cases (coding, writing, emails)
+- Improving troubleshooting sections
+- Adding video tutorials or GIFs
+- Translating docs to other languages
+
+### ⚙️ Code Improvements
+
+- Type annotations for `src/shared/` modules
+- Performance profiling and optimization
+- Better error messages
+- Refactoring complex functions
+
+### 🧪 Testing
+
+Areas with gaps:
+- `src/shared/formatter.py` — Spoken command parsing
+- `src/shared/llm_cleanup.py` — With mocked Ollama
+- macOS app lifecycle (startup, shutdown, hotkey detection)
+- Web app file upload handling
+
+### 🌍 Translations & Localization
+
+Help translate WhisperFlow for other regions:
+- UI messages and menu labels
+- Documentation (README, INSTALLATION, etc.)
+- Whisper language packs optimization
+
+---
+
+## Questions?
+
+Have questions about contributing? 
+- Ask in [GitHub Discussions](https://github.com/open-whisperflow/open-whisperflow/discussions)
+- Email or open a GitHub issue with the `question` label
+
+We're here to help! 🙌

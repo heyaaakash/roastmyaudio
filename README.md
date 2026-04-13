@@ -1,102 +1,290 @@
-# WhisperFlow
+# 🎙️ WhisperFlow
 
-Open-source macOS dictation tool — a fully local alternative to Wispr Flow.
+> **Open-source, fully local speech-to-text for every device**
 
-Hold a key, speak, release — text appears in any app.
-Nothing leaves your machine. No subscription. No cloud.
+WhisperFlow is a privacy-first dictation engine powered by OpenAI's [Whisper](https://openai.com/research/whisper). Run it on **macOS** (menu bar app) or **any OS** (web browser). Nothing leaves your machine. No subscriptions. No cloud. No telemetry.
 
----
-
-## How it works
-
-```
-Hold Fn  →  speak  →  release  →  text pastes into any app
-```
-
-A menu bar icon (`W`) lives in your top bar. While you hold the trigger key, a pill overlay shows a live preview of your words. On release, Whisper transcribes locally and injects the text via Cmd+V.
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-green.svg)](https://www.python.org/downloads/)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 ---
 
-## Quickstart
+## Use Cases
+
+### 🖥️ macOS Menu Bar App
+Hold a key, speak, release — text pastes anywhere instantly.
+
+```
+Hold Fn  →  speak  →  release  →  text pasted into any app
+```
+
+- **Live preview** of words while you speak
+- **One-key push-to-talk** (hold `Fn` or `Ctrl+Option+D`)
+- **Instant text injection** via Cmd+V
+- Perfect for emails, Slack, notes, code comments
+
+### 🌐 Web App (macOS, Windows, Linux)
+Open a browser tab and start dictating.
+
+```
+http://127.0.0.1:5000  →  record  →  transcribed text in browser
+```
+
+- Works on **any OS** (Windows, Mac, Linux)
+- Use on multiple devices sharing the same computer
+- Copy-paste results or integrate with other tools
+- No native app required
+
+---
+
+## Why WhisperFlow?
+
+| Feature | WhisperFlow | Wispr Flow | Google Docs | VS Code Voice |
+|---------|------------|-----------|-----------|--------------|
+| **Local transcription** | ✅ | ✅ | ❌ (cloud) | ❌ (cloud) |
+| **No subscription** | ✅ | ❌ ($10/mo) | ✅ (free) | ✅ (free) |
+| **Works offline** | ✅ | ❌ | ❌ | ❌ |
+| **No telemetry** | ✅ | ❌ | ❌ | ❌ |
+| **Open source** | ✅ | ❌ | ❌ | ❌ |
+| **LLM grammar cleanup** | ✅ (Ollama) | ✅ | ✅ | ✅ |
+| **Spoken commands** | ✅ | ✅ | ✅ | ❌ |
+| **macOS menu bar** | ✅ | ✅ | ❌ | ❌ |
+| **Web browser** | ✅ | ❌ | ✅ | ❌ |
+
+---
+
+## Quick Start
+
+### macOS Menu Bar (Recommended)
 
 ```bash
-git clone https://github.com/your-username/open-whisperflow
+# Clone and setup
+git clone https://github.com/open-whisperflow/open-whisperflow
 cd open-whisperflow
 
-make setup     # creates .venv, installs deps — nothing outside this folder
-make run       # launches the menu bar app
+make setup   # creates .venv, installs deps locally
+make run     # launches menu bar app
 ```
 
-That's it. The first time you hold `Fn`, the model downloads to `cache/models/` (140 MB for base).
+That's it. Hold `Fn` to start speaking.
 
-**Optional: pre-download models before first use**
+**Optional: Pre-download models** (saves waiting on first use)
 
 ```bash
 make download
 ```
 
-**Optional: start automatically at login**
+**Optional: Start at login**
 
 ```bash
 bash scripts/install_launch_agent.sh
 ```
 
+### Web App (All Operating Systems)
+
+```bash
+make setup   # once
+make web     # start server
+```
+
+Then open **http://127.0.0.1:5000** in your browser.
+
 ---
 
 ## Features
 
-- **Push-to-talk** — hold `Fn` (or `Ctrl+Option+D` as fallback)
-- **Live preview** — see transcription words appear in real time while speaking
-- **Spoken commands** — say "new line", "period", "bullet point" and they become text
-- **LLM cleanup** — optional [Ollama](https://ollama.ai) integration removes filler words and fixes grammar locally
-- **10 languages** — English, Spanish, French, German, Chinese, Japanese, Portuguese, Italian, Korean, Russian
-- **All models** — `tiny` (40 MB) to `large-v3` (3 GB), switchable from the menu
-- **Web UI** — browser-based transcription at `http://127.0.0.1:5000` (`make web`)
-- **Private by design** — no telemetry, no API calls, all data in `cache/` and `data/`
+### Core
+- ✅ **Real-time speech-to-text** — Uses OpenAI Whisper (10 languages)
+- ✅ **Whisper model selector** — `tiny` (40 MB) to `large-v3` (3 GB)
+- ✅ **Spoken commands** — Say "new line", "period", "comma" → they appear as formatting
+- ✅ **Custom dictionary** — Add domain-specific terms (e.g., "Kubernetes", "GraphQL")
+- ✅ **Transcription history** — Recent transcriptions saved locally
+
+### macOS Menu Bar Only
+- ✅ **Push-to-talk** — Hold `Fn` (or `Ctrl+Option+D` fallback)
+- ✅ **Live preview overlay** — See words appear as you speak
+- ✅ **Automatic text injection** — Results pasted via Cmd+V into any app
+- ✅ **Menu bar quick settings** — Change model, language from top bar icon
+- ✅ **Launch at login** — Optional auto-start
+
+### Web App
+- ✅ **Browser recording** — Works on any OS
+- ✅ **Model selection dropdown** — Choose transcription speed vs. accuracy
+- ✅ **Copy to clipboard** — One-click results export
+- ✅ **Responsive design** — Desktop, tablet, and mobile friendly
+
+### Optional Enhancements
+- ✅ **LLM cleanup** — Run local [Ollama](https://ollama.ai) to fix grammar and remove filler words
+- ✅ **Environment variable config** — Override settings without editing code
 
 ---
 
-## Privacy story
+## Privacy & Security
 
-Everything runs on your computer:
+**All processing happens on your computer:**
 
-- Models cached in `cache/models/` inside this folder
-- Transcription history saved in `data/history.json` inside this folder
-- Settings saved in `data/settings.json` inside this folder
-- No internet connection required after first model download
-- No crash reporting, no analytics, no external servers
+- 🔐 Models stored in `cache/models/` (local project folder)
+- 📝 History saved in `data/history.json` (local project folder)
+- ⚙️ Settings in `data/settings.json` (local project folder)
+- 🌐 **Zero external API calls** (except optional Ollama, which also runs locally)
+- 🚫 **No telemetry, analytics, or crash reporting**
 
-The optional Ollama LLM also runs locally (`localhost:11434`).
+**Internet required only for:**
+- Initial model download (one-time, ~140 MB for `base` model)
+- Optional Ollama LLM integration (runs on `localhost:11434`)
+
+---
+
+## System Requirements
+
+### macOS Menu Bar App
+- **macOS 11+** (Big Sur or later)
+- **Python 3.9+**
+- **2 GB+ free disk** (for models; 140 MB minimum with `tiny` model)
+- **2–8 GB RAM** (depends on model size; `tiny` needs ~1 GB, `base` needs ~2-3 GB)
+
+### Web App
+- **macOS, Windows, or Linux**
+- **Python 3.9+**
+- **Modern browser** with microphone access (Chrome, Firefox, Safari, Edge)
+- **2 GB+ free disk**
+
+Check your Python version:
+
+```bash
+python3 --version   # Should output 3.9 or higher
+```
 
 ---
 
 ## Commands
 
 ```bash
-make setup      # create .venv and install all dependencies
-make run        # start macOS menu bar app
-make web        # start Flask web UI (http://127.0.0.1:5000)
-make download   # download Whisper models interactively
-make test       # run test suite
-make lint       # check code style with ruff
-make clean      # remove .venv and compiled files
+make setup      # Create .venv and install all dependencies
+make run        # Start macOS menu bar app
+make web        # Start web UI (http://127.0.0.1:5000)
+make download   # Download Whisper models interactively
+make test       # Run test suite
+make lint       # Check code style (ruff)
+make clean      # Remove .venv and cached files
 ```
 
 ---
 
 ## Configuration
 
-Settings persist automatically in `data/settings.json` when changed from the menu.
-
-You can also override via environment variables:
+Settings auto-save when changed in the app menu. You can also override via environment variables:
 
 ```bash
-export WHISPER_MODEL=small      # default: base
+export WHISPER_MODEL=small            # tiny, base (default), small, medium, large
+export WHISPER_LANGUAGE=es            # en (default), es, fr, de, zh, ja, pt, it, ko, ru
 export OLLAMA_URL=http://localhost:11434/api/generate
-export OLLAMA_MODEL=llama3.2:1b
+export OLLAMA_MODEL=llama3.2:1b       # Requires Ollama running locally
 ```
 
-Or copy `config/.env.example` to `config/.env` and edit it.
+Or create `config/.env` and add these variables:
+
+```bash
+WHISPER_MODEL=small
+WHISPER_LANGUAGE=en
+```
+
+See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed setup and troubleshooting.
+
+---
+
+## Documentation
+
+- **[Installation Guide](docs/INSTALLATION.md)** — Detailed setup for both platforms
+- **[Architecture](docs/ARCHITECTURE.md)** — How WhisperFlow works internally
+- **[Contributing](CONTRIBUTING.md)** — How to contribute or report bugs
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** — Community guidelines
+
+---
+
+## Project Structure
+
+```
+src/
+  apps/
+    macos/              # Menu bar app (macOS only)
+      menubar_dictation.py
+      audio_recorder.py
+      hud_overlay.py
+    web/                # Web app (all OS)
+      app.py
+      static/, templates/
+  shared/               # Cross-platform modules
+    transcriber.py      # Whisper transcription engine
+    formatter.py        # Spoken command & text formatting
+    llm_cleanup.py      # Optional Ollama grammar fix
+    text_injector.py    # macOS text injection
+    dictionary.py       # Custom word dictionary
+    history.py          # Transcription history
+    settings.py         # Configuration management
+config/
+  config.py             # Centralized settings & paths
+docs/
+  INSTALLATION.md       # Setup & troubleshooting
+  ARCHITECTURE.md       # Technical design
+data/                   # Auto-created at runtime
+  history.json          # Transcription log
+  settings.json         # User preferences
+cache/
+  models/               # Downloaded Whisper models
+```
+
+---
+
+## Troubleshooting
+
+**Q: Models not downloading?**  
+Models download automatically to `cache/models/` on first use. If interrupted, delete `cache/models/` and try again.
+
+**Q: Menu bar app not responding to Fn key?**  
+1. Grant accessibility permissions: **System Preferences → Security & Privacy → Accessibility**
+2. Restart the app
+3. Fallback hotkey is `Ctrl+Option+D`
+
+**Q: Web app won't open in browser?**  
+Ensure `http://127.0.0.1:5000` is not blocked by antivirus or firewall.
+
+**Q: How do I use Ollama for grammar cleanup?**  
+1. Install [Ollama](https://ollama.ai)
+2. Run `ollama pull llama3.2:1b` to download a lightweight model
+3. Start Ollama (runs on `localhost:11434` by default)
+4. WhisperFlow will auto-detect and use it
+
+See [docs/INSTALLATION.md](docs/INSTALLATION.md#troubleshooting) for more help.
+
+---
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
+- Reporting bugs
+- Suggesting features
+- Setting up a development environment
+- Submitting pull requests
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## Support
+
+💬 **Questions or issues?**
+- Open a [GitHub Issue](https://github.com/open-whisperflow/open-whisperflow/issues)
+- Check [docs/](docs/) for detailed docs
+- Review [CONTRIBUTING.md](CONTRIBUTING.md) for setup help
+
+**Like this project?** Please ⭐ it on GitHub!
 
 ---
 

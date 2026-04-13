@@ -21,9 +21,9 @@ from flask_cors import CORS
 # ---------------------------------------------------------------------------
 # Path setup — must run before project imports
 # ---------------------------------------------------------------------------
-CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
-SRC_DIR = Path(__file__).resolve().parent.parent
-for _p in (str(CONFIG_DIR), str(SRC_DIR)):
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+SRC_DIR = Path(__file__).resolve().parent.parent.parent
+for _p in (str(PROJECT_ROOT), str(SRC_DIR)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
