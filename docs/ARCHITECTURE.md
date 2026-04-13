@@ -1,14 +1,45 @@
 # 📐 Architecture & Design
 
-Technical documentation for the Whisper Flow project structure, modules, and data flow.
+Technical deep-dive into WhisperFlow's architecture, module organization, and data flow.
 
 ## 🎯 Design Principles
 
 1. **Self-Contained**: All dependencies, models, and data stored within the project directory
-2. **Relative Paths**: No hardcoded absolute paths — works on any machine
-3. **Modular**: Shared code reused across macOS and web apps
-4. **Configurable**: Centralized settings in `config.py`
-5. **Performance**: Local caching, model warmup, live preview for responsiveness
+2. **Dual-Platform**: Shared core logic used by both macOS menu bar app and web interface
+3. **Relative Paths**: No hardcoded absolute paths — works on any machine
+4. **Modular**: Reusable utilities in `src/shared/` for both platforms
+5. **Configurable**: Centralized settings in `config/config.py`
+6. **Performance**: Local caching, model warmup, live preview for responsiveness
+7. **Privacy First**: No external API calls, no telemetry, all data stays local
+
+## 🌉 Dual-Platform Architecture
+
+WhisperFlow runs in two modes using **identical transcription logic**:
+
+### macOS Menu Bar App (`src/apps/macos/`)
+- **Input**: Global hotkey listener (Fn key)
+- **Processing**: Shared transcription modules
+- **Output**: Text injected via Cmd+V into any app
+- **UI**: Native macOS menu bar + overlay
+
+### Web App (`src/apps/web/`)
+- **Input**: Browser microphone (cross-platform)
+- **Processing**: Shared transcription modules
+- **Output**: Text displayed in browser, user copies
+- **UI**: HTML5 web interface (responsive, mobile-friendly)
+
+### Shared Core (`src/shared/`)
+
+Both apps use identical modules for:
+- **Transcription** (`transcriber.py`) — Whisper inference
+- **Formatting** (`formatter.py`) — Spoken command parsing, punctuation
+- **Cleanup** (`llm_cleanup.py`) — Optional Ollama grammar fix
+- **History** (`history.py`) — Log recent transcriptions
+- **Dictionary** (`dictionary.py`) — Custom terminology
+- **Config** (`settings.py`) — Per-user preferences
+- **Text Injection** (`text_injector.py`) — macOS-specific clipboard paste
+
+This ensures both platforms produce **identical results** for the same audio input.
 
 ## 🗂️ Module Organization
 
