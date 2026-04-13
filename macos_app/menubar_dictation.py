@@ -623,7 +623,7 @@ class WhisperMenuBarApp(rumps.App):
             unavailable.set_callback(None)
             self._model_menu.add(unavailable)
 
-        self._quit_item = rumps.MenuItem("Quit Whisper Flow", callback=self._on_quit)
+        self._quit_item = rumps.MenuItem("Quit RoastMyAudio", callback=self._on_quit)
         self.menu = [
             self._home_item,
             self._updates_item,

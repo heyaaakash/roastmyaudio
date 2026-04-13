@@ -421,7 +421,7 @@ class WhisperMenuBarApp(rumps.App):
             unavailable = rumps.MenuItem("No local models found")
             unavailable.set_callback(None)
             self._model_menu.add(unavailable)
-        self._quit_item = rumps.MenuItem("Quit Whisper Flow", callback=self._on_quit)
+        self._quit_item = rumps.MenuItem("Quit RoastMyAudio", callback=self._on_quit)
         self.menu = [self._home_item, self._updates_item, None, self._paste_last_item, self._last_preview_item, None, self._shortcuts_header_item, self._hotkey_hint_item, self._paste_shortcut_hint_item, None, self._mic_menu, self._language_menu, None, self._dictionary_item, self._history_item, None, self._help_item, self._support_item, self._feedback_item, None, self._status_item, self._permissions_item, self._toggle_item, self._test_overlay_item, self._copy_last_item, self._model_menu, None, self._quit_item]
         if self._fn_supported:
             self._fn_monitor_global = NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(NSEventMaskFlagsChanged, self._on_flags_changed)
