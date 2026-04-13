@@ -1,4 +1,4 @@
-# WhisperFlow — Development dependencies
+# RoastMyAudio — Development dependencies
 # Install with: pip install -r requirements-dev.txt
 
 ruff>=0.4.0

@@ -1,4 +1,4 @@
-# Contributing to WhisperFlow
+# Contributing to RoastMyAudio
 
 Thank you for your interest in contributing! This document covers everything you need to get started.
 
@@ -24,8 +24,8 @@ Everything runs inside the project directory — nothing is installed system-wid
 
 ```bash
 # Fork the repo on GitHub, then clone your fork
-git clone https://github.com/YOUR-USERNAME/open-whisperflow.git
-cd open-whisperflow
+git clone https://github.com/YOUR-USERNAME/roastmyaudio.git
+cd roastmyaudio
 
 # Create a virtual environment and install dependencies
 make setup
@@ -233,7 +233,7 @@ It's normal to have back-and-forth on a PR — we're here to help!
 
 ## Reporting Issues
 
-Found a bug or have a feature idea? Please open a [GitHub Issue](https://github.com/open-whisperflow/open-whisperflow/issues).
+Found a bug or have a feature idea? Please open a [GitHub Issue](https://github.com/roastmyaudio/roastmyaudio/issues).
 
 ### Bug Reports
 
@@ -372,7 +372,7 @@ Areas with gaps:
 
 ### 🌍 Translations & Localization
 
-Help translate WhisperFlow for other regions:
+Help translate RoastMyAudio for other regions:
 - UI messages and menu labels
 - Documentation (README, INSTALLATION, etc.)
 - Whisper language packs optimization
@@ -382,7 +382,7 @@ Help translate WhisperFlow for other regions:
 ## Questions?
 
 Have questions about contributing? 
-- Ask in [GitHub Discussions](https://github.com/open-whisperflow/open-whisperflow/discussions)
+- Ask in [GitHub Discussions](https://github.com/roastmyaudio/roastmyaudio/discussions)
 - Email or open a GitHub issue with the `question` label
 
 We're here to help! 🙌

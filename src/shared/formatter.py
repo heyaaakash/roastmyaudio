@@ -1,5 +1,5 @@
 """
-Shared text formatting utilities for WhisperFlow.
+Shared text formatting utilities for RoastMyAudio.
 
 Converts raw Whisper transcriptions into clean, human-readable text.
 Handles spoken commands, punctuation, capitalization, and list formatting.

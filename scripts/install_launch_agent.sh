@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# WhisperFlow — Install / Uninstall launchd login-item
+# RoastMyAudio — Install / Uninstall launchd login-item
 #
 # Usage:
 #   bash scripts/install_launch_agent.sh         # install auto-start
 #   bash scripts/install_launch_agent.sh remove  # remove auto-start
 #
-# This creates a plist in ~/Library/LaunchAgents/ that starts WhisperFlow
+# This creates a plist in ~/Library/LaunchAgents/ that starts RoastMyAudio
 # automatically at login. Nothing is installed outside your home directory.
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
-LABEL="com.whisperflow.app"
+LABEL="com.roastmyaudio.app"
 PLIST_PATH="$HOME/Library/LaunchAgents/${LABEL}.plist"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_PYTHON="$PROJECT_ROOT/.venv/bin/python"
@@ -29,7 +29,7 @@ if [[ "${1:-}" == "remove" ]]; then
         rm "$PLIST_PATH"
         echo "→ Removed $PLIST_PATH"
     fi
-    echo "✓ WhisperFlow auto-start removed."
+    echo "✓ RoastMyAudio auto-start removed."
     exit 0
 fi
 
@@ -70,10 +70,10 @@ cat > "$PLIST_PATH" <<PLIST
     <false/>
 
     <key>StandardOutPath</key>
-    <string>${LOG_DIR}/whisperflow.log</string>
+    <string>${LOG_DIR}/roastmyaudio.log</string>
 
     <key>StandardErrorPath</key>
-    <string>${LOG_DIR}/whisperflow.error.log</string>
+    <string>${LOG_DIR}/roastmyaudio.error.log</string>
 
     <key>WorkingDirectory</key>
     <string>${PROJECT_ROOT}</string>
@@ -94,11 +94,11 @@ fi
 launchctl load "$PLIST_PATH"
 
 echo ""
-echo "✓ WhisperFlow will now start automatically at login."
+echo "✓ RoastMyAudio will now start automatically at login."
 echo ""
 echo "  Plist:    $PLIST_PATH"
-echo "  Logs:     $LOG_DIR/whisperflow.log"
-echo "  Errors:   $LOG_DIR/whisperflow.error.log"
+echo "  Logs:     $LOG_DIR/roastmyaudio.log"
+echo "  Errors:   $LOG_DIR/roastmyaudio.error.log"
 echo ""
 echo "  To remove auto-start:"
 echo "    bash scripts/install_launch_agent.sh remove"

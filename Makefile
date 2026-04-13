@@ -1,4 +1,4 @@
-# WhisperFlow Makefile
+# RoastMyAudio Makefile
 # All commands run inside the project-local virtual environment.
 # Nothing is installed outside this directory.
 
@@ -14,7 +14,7 @@ PYTEST    := $(VENV)/bin/pytest
 # ── Default target ────────────────────────────────────────────────────────
 help:
 	@echo ""
-	@echo "  WhisperFlow — open-source alternative to Wispr Flow"
+	@echo "  RoastMyAudio — open-source alternative to Wispr Flow"
 	@echo ""
 	@echo "  make setup      Create .venv and install all dependencies"
 	@echo "  make run        Launch the macOS menu bar app"
@@ -22,7 +22,7 @@ help:
 	@echo "  make download   Download Whisper models interactively"
 	@echo "  make test       Run the pytest test suite"
 	@echo "  make lint       Run ruff linter"
-	@echo "  make bundle     Build a distributable WhisperFlow.app (requires py2app)"
+	@echo "  make bundle     Build a distributable RoastMyAudio.app (requires py2app)"
 	@echo "  make clean      Remove .venv, cache, and compiled files"
 	@echo ""
 
@@ -45,7 +45,7 @@ $(VENV)/bin/activate:
 
 # ── Run applications ──────────────────────────────────────────────────────
 run: $(VENV)/bin/activate
-	@echo "→ Starting WhisperFlow menu bar app..."
+	@echo "→ Starting RoastMyAudio menu bar app..."
 	$(PY) src/apps/macos/menubar_dictation.py
 
 web: $(VENV)/bin/activate
@@ -68,10 +68,10 @@ lint-fix: $(VENV)/bin/activate
 
 # ── App bundle (macOS .app) ───────────────────────────────────────────────
 bundle: $(VENV)/bin/activate
-	@echo "→ Building WhisperFlow.app..."
+	@echo "→ Building RoastMyAudio.app..."
 	$(PIP) install py2app
 	$(PY) setup_bundle.py py2app
-	@echo "✓ App built in dist/WhisperFlow.app"
+	@echo "✓ App built in dist/RoastMyAudio.app"
 
 # ── Cleanup ───────────────────────────────────────────────────────────────
 clean:

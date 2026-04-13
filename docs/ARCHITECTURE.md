@@ -1,6 +1,6 @@
 # 📐 Architecture & Design
 
-Technical deep-dive into WhisperFlow's architecture, module organization, and data flow.
+Technical deep-dive into RoastMyAudio's architecture, module organization, and data flow.
 
 ## 🎯 Design Principles
 
@@ -14,7 +14,7 @@ Technical deep-dive into WhisperFlow's architecture, module organization, and da
 
 ## 🌉 Dual-Platform Architecture
 
-WhisperFlow runs in two modes using **identical transcription logic**:
+RoastMyAudio runs in two modes using **identical transcription logic**:
 
 ### macOS Menu Bar App (`src/apps/macos/`)
 - **Input**: Global hotkey listener (Fn key)

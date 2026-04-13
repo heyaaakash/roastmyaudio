@@ -34,5 +34,5 @@ jobs:
         run: pytest tests/ -v --tb=short
         env:
           # Point cache dirs into a temp location so tests don't create real model directories
-          HF_HOME: /tmp/whisperflow-ci-cache
-          HOME_CACHE_DIR: /tmp/whisperflow-ci-models
+          HF_HOME: /tmp/roastmyaudio-ci-cache
+          HOME_CACHE_DIR: /tmp/roastmyaudio-ci-models

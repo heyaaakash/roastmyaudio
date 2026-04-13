@@ -31,8 +31,8 @@ python3 --version  # Should output 3.9 or higher
 ## Quick Start (One Command)
 
 ```bash
-git clone https://github.com/open-whisperflow/open-whisperflow
-cd open-whisperflow
+git clone https://github.com/roastmyaudio/roastmyaudio
+cd roastmyaudio
 
 make setup   # Creates .venv and installs all dependencies
 make run     # Start macOS menu bar app
@@ -50,8 +50,8 @@ That's it! Skip to [Running the Apps](#running-the-apps) below.
 
 ```bash
 # Clone the repository
-git clone https://github.com/open-whisperflow/open-whisperflow
-cd open-whisperflow
+git clone https://github.com/roastmyaudio/roastmyaudio
+cd roastmyaudio
 ```
 
 ### Step 2: Create Virtual Environment
@@ -122,8 +122,8 @@ xcode-select --install
 2. **Grant Accessibility Permissions**
    - Open **System Preferences → Security & Privacy → Accessibility**
    - Click the lock icon to unlock
-   - Look for **"Whisper Flow"** (or Python app if not yet recognized)
-   - Check the box to allow Whisper Flow to control your computer
+   - Look for **"RoastMyAudio"** (or Python app if not yet recognized)
+   - Check the box to allow RoastMyAudio to control your computer
    - Close System Preferences
 
    (The app will prompt for this on first use if not pre-granted.)
@@ -139,11 +139,11 @@ xcode-select --install
    ```bash
    bash scripts/install_launch_agent.sh
    ```
-   This creates `~/Library/LaunchAgents/com.whisperflow.plist` to auto-start the app.
+   This creates `~/Library/LaunchAgents/com.roastmyaudio.plist` to auto-start the app.
    
    To remove later:
    ```bash
-   rm ~/Library/LaunchAgents/com.whisperflow.plist
+   rm ~/Library/LaunchAgents/com.roastmyaudio.plist
    ```
 
 #### Verify Installation
@@ -328,7 +328,7 @@ ollama serve
 # Server runs on http://localhost:11434
 ```
 
-### Enable in WhisperFlow
+### Enable in RoastMyAudio
 
 Set environment variables:
 
@@ -339,7 +339,7 @@ export OLLAMA_MODEL=llama3.2:1b
 
 Now transcriptions will be automatically cleaned before pasting (or displayed in web UI).
 
-**WhisperFlow gracefully continues** even if Ollama isn't running — you'll just get raw transcriptions.
+**RoastMyAudio gracefully continues** even if Ollama isn't running — you'll just get raw transcriptions.
 
 ---
 
@@ -366,7 +366,7 @@ source .venv/bin/activate
 
 A: Make sure you're running from the project root:
 ```bash
-cd /path/to/open-whisperflow  # The cloned folder
+cd /path/to/roastmyaudio  # The cloned folder
 make run
 ```
 
@@ -375,8 +375,8 @@ make run
 **Q: Menu bar app doesn't respond to Fn key**
 
 A: 
-1. Grant **Accessibility permissions**: System Preferences → Security & Privacy → Accessibility (check WhisperFlow)
-2. Grant **Microphone access**: System Preferences → Security & Privacy → Microphone (check WhisperFlow)
+1. Grant **Accessibility permissions**: System Preferences → Security & Privacy → Accessibility (check RoastMyAudio)
+2. Grant **Microphone access**: System Preferences → Security & Privacy → Microphone (check RoastMyAudio)
 3. Restart the app
 4. Try fallback hotkey: `Ctrl+Option+D`
 
@@ -440,7 +440,7 @@ A: Accuracy depends on audio quality and microphone:
 
 Still stuck?
 - Check [README.md troubleshooting](../README.md#troubleshooting)
-- Open a [GitHub Issue](https://github.com/open-whisperflow/open-whisperflow/issues)
+- Open a [GitHub Issue](https://github.com/roastmyaudio/roastmyaudio/issues)
 - See [CONTRIBUTING.md](../CONTRIBUTING.md#reporting-issues) for bug report guidelines
 
 

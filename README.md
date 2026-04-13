@@ -1,8 +1,8 @@
-# 🎙️ WhisperFlow
+# 🎙️ RoastMyAudio
 
 > **Open-source, fully local speech-to-text for every device**
 
-WhisperFlow is a privacy-first dictation engine powered by OpenAI's [Whisper](https://openai.com/research/whisper). Run it on **macOS** (menu bar app) or **any OS** (web browser). Nothing leaves your machine. No subscriptions. No cloud. No telemetry.
+RoastMyAudio is a privacy-first dictation engine powered by OpenAI's [Whisper](https://openai.com/research/whisper). Run it on **macOS** (menu bar app) or **any OS** (web browser). Nothing leaves your machine. No subscriptions. No cloud. No telemetry.
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-green.svg)](https://www.python.org/downloads/)
@@ -38,9 +38,9 @@ http://127.0.0.1:5000  →  record  →  transcribed text in browser
 
 ---
 
-## Why WhisperFlow?
+## Why RoastMyAudio?
 
-| Feature | WhisperFlow | Wispr Flow | Google Docs | VS Code Voice |
+| Feature | RoastMyAudio | Wispr Flow | Google Docs | VS Code Voice |
 |---------|------------|-----------|-----------|--------------|
 | **Local transcription** | ✅ | ✅ | ❌ (cloud) | ❌ (cloud) |
 | **No subscription** | ✅ | ❌ ($10/mo) | ✅ (free) | ✅ (free) |
@@ -60,8 +60,8 @@ http://127.0.0.1:5000  →  record  →  transcribed text in browser
 
 ```bash
 # Clone and setup
-git clone https://github.com/open-whisperflow/open-whisperflow
-cd open-whisperflow
+git clone https://github.com/roastmyaudio/roastmyaudio
+cd roastmyaudio
 
 make setup   # creates .venv, installs deps locally
 make run     # launches menu bar app
@@ -197,7 +197,7 @@ See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed setup and troubles
 ## Documentation
 
 - **[Installation Guide](docs/INSTALLATION.md)** — Detailed setup for both platforms
-- **[Architecture](docs/ARCHITECTURE.md)** — How WhisperFlow works internally
+- **[Architecture](docs/ARCHITECTURE.md)** — How RoastMyAudio works internally
 - **[Contributing](CONTRIBUTING.md)** — How to contribute or report bugs
 - **[Code of Conduct](CODE_OF_CONDUCT.md)** — Community guidelines
 
@@ -254,7 +254,7 @@ Ensure `http://127.0.0.1:5000` is not blocked by antivirus or firewall.
 1. Install [Ollama](https://ollama.ai)
 2. Run `ollama pull llama3.2:1b` to download a lightweight model
 3. Start Ollama (runs on `localhost:11434` by default)
-4. WhisperFlow will auto-detect and use it
+4. RoastMyAudio will auto-detect and use it
 
 See [docs/INSTALLATION.md](docs/INSTALLATION.md#troubleshooting) for more help.
 
@@ -280,7 +280,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 ## Support
 
 💬 **Questions or issues?**
-- Open a [GitHub Issue](https://github.com/open-whisperflow/open-whisperflow/issues)
+- Open a [GitHub Issue](https://github.com/roastmyaudio/roastmyaudio/issues)
 - Check [docs/](docs/) for detailed docs
 - Review [CONTRIBUTING.md](CONTRIBUTING.md) for setup help
 
