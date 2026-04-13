@@ -1,5 +1,5 @@
 """
-Persistent user settings for WhisperFlow.
+Persistent user settings for RoastMyAudio.
 
 Settings are stored in data/settings.json inside the project directory.
 All values have sensible defaults so the file is optional.

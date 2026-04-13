@@ -1,5 +1,5 @@
 """
-WhisperFlow — macOS Menu Bar App.
+RoastMyAudio — macOS Menu Bar App.
 
 Hold Fn (or Ctrl+Option+D) to record → release to transcribe and paste.
 """
@@ -124,11 +124,11 @@ SHORT_UTTERANCE_FAST_PATH_SEC = 0.8
 RUNTIME_DIR = CONFIG_DIR.parent / "data" / "runtime"
 RUNTIME_LAST_TEXT_PATH = RUNTIME_DIR / "last_processed.txt"
 
-HOME_URL = "https://github.com/aakashr/open-whisperflow"
-UPDATES_URL = "https://github.com/aakashr/open-whisperflow/releases"
-HELP_CENTER_URL = "https://github.com/aakashr/open-whisperflow#readme"
-SUPPORT_URL = "https://github.com/aakashr/open-whisperflow/discussions"
-FEEDBACK_URL = "https://github.com/aakashr/open-whisperflow/issues"
+HOME_URL = "https://github.com/roastmyaudio/roastmyaudio"
+UPDATES_URL = "https://github.com/roastmyaudio/roastmyaudio/releases"
+HELP_CENTER_URL = "https://github.com/roastmyaudio/roastmyaudio#readme"
+SUPPORT_URL = "https://github.com/roastmyaudio/roastmyaudio/discussions"
+FEEDBACK_URL = "https://github.com/roastmyaudio/roastmyaudio/issues"
 
 SUPPORTED_LANGUAGES = {
     "Auto-detect": None,
@@ -253,7 +253,7 @@ class WhisperMenuBarApp(rumps.App):
 
         self._help_item = rumps.MenuItem("Help / Docs", callback=self._on_open_help)
         self._feedback_item = rumps.MenuItem("Report Issue", callback=self._on_open_feedback)
-        self._quit_item = rumps.MenuItem("Quit WhisperFlow", callback=self._on_quit)
+        self._quit_item = rumps.MenuItem("Quit RoastMyAudio", callback=self._on_quit)
 
         self.menu = [
             self._home_item,
@@ -785,7 +785,7 @@ class WhisperMenuBarApp(rumps.App):
             if success:
                 mode = "chunked" if fast_segments else "full"
                 AppHelper.callAfter(self._set_status, f"Pasted ({model_name} / {mode})")
-                rumps.notification("WhisperFlow", "Transcription inserted", formatted[:120])
+                rumps.notification("RoastMyAudio", "Transcription inserted", formatted[:120])
             else:
                 AppHelper.callAfter(self._show_injection_failure, formatted, reason)
 
@@ -802,7 +802,7 @@ class WhisperMenuBarApp(rumps.App):
             print(f"Clipboard write failed: {exc}")
             return
         rumps.notification(
-            "WhisperFlow",
+            "RoastMyAudio",
             "Paste failed",
             f"Text copied to clipboard — press Cmd+V. ({reason})",
             sound=False,
@@ -814,7 +814,7 @@ class WhisperMenuBarApp(rumps.App):
     # ====================================================================
     def _on_models_ready(self):
         self.title = "W"
-        rumps.notification("WhisperFlow", "", "Models ready", sound=False)
+        rumps.notification("RoastMyAudio", "", "Models ready", sound=False)
 
     def _on_open_home(self, _):
         webbrowser.open(HOME_URL)

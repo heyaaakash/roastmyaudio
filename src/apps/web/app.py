@@ -1,5 +1,5 @@
 """
-WhisperFlow Web UI — Flask server.
+RoastMyAudio Web UI — Flask server.
 
 Provides two transcription endpoints:
   POST /transcribe         — full transcription of an audio file

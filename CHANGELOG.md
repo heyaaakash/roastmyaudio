@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to WhisperFlow will be documented in this file.
+All notable changes to RoastMyAudio will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -165,7 +165,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 
 ## Support
 
-- 🐛 **Found a bug?** Open a [GitHub Issue](https://github.com/open-whisperflow/open-whisperflow/issues)
+- 🐛 **Found a bug?** Open a [GitHub Issue](https://github.com/roastmyaudio/roastmyaudio/issues)
 - 📚 **Need help?** Check [docs/INSTALLATION.md](docs/INSTALLATION.md)
 - 💬 **Have questions?** See [README.md](README.md#support) or open a Discussion
 - ⭐ **Like this project?** Please star it on GitHub!

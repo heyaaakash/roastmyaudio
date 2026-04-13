@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Setup script for Whisper Flow on macOS
+# Setup script for RoastMyAudio on macOS
 # This script ensures all dependencies and local paths are properly configured
 
 set -e  # Exit on error
@@ -8,7 +8,7 @@ set -e  # Exit on error
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_PATH="$PROJECT_ROOT/.venv"
 
-echo "🔧 Whisper Flow - macOS Setup"
+echo "🔧 RoastMyAudio - macOS Setup"
 echo "================================"
 echo ""
 
