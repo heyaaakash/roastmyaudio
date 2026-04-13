@@ -38,21 +38,6 @@ http://127.0.0.1:5000  →  record  →  transcribed text in browser
 
 ---
 
-## Why RoastMyAudio?
-
-| Feature | RoastMyAudio | Wispr Flow | Google Docs | VS Code Voice |
-|---------|------------|-----------|-----------|--------------|
-| **Local transcription** | ✅ | ✅ | ❌ (cloud) | ❌ (cloud) |
-| **No subscription** | ✅ | ❌ ($10/mo) | ✅ (free) | ✅ (free) |
-| **Works offline** | ✅ | ❌ | ❌ | ❌ |
-| **No telemetry** | ✅ | ❌ | ❌ | ❌ |
-| **Open source** | ✅ | ❌ | ❌ | ❌ |
-| **LLM grammar cleanup** | ✅ (Ollama) | ✅ | ✅ | ✅ |
-| **Spoken commands** | ✅ | ✅ | ✅ | ❌ |
-| **macOS menu bar** | ✅ | ✅ | ❌ | ❌ |
-| **Web browser** | ✅ | ❌ | ✅ | ❌ |
-
----
 
 ## Quick Start
 
