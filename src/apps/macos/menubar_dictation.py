@@ -82,7 +82,7 @@ try:
         list_input_devices,
         normalize_audio,
     )
-    from src.apps.macos.hud_overlay import DictationOverlay
+    from src.apps.macos.hud_overlay import DictationOverlay, _normalize_audio_level
     from src.apps.macos.warmup import load_models_async
     from src.shared.dictionary import add as dict_add
     from src.shared.dictionary import as_prompt
@@ -350,6 +350,7 @@ class WhisperMenuBarApp(rumps.App):
         if not self._overlay:
             return
         AppHelper.callAfter(self._overlay.show)
+        AppHelper.callAfter(self._overlay.set_title, f"Dictating · {self._selected_model}")
 
     def _hide_overlay(self):
         if not self._overlay:
@@ -533,6 +534,10 @@ class WhisperMenuBarApp(rumps.App):
         self._audio_chunks.append(chunk.reshape(-1, 1).copy())  # keep (N,1) shape for concatenation
         with self._audio_buffer_lock:
             self._fast_chunk_queue.append(chunk.copy())
+        if self._overlay is not None and chunk.size and self._recording:
+            flat = chunk.reshape(-1)
+            rms = float(np.sqrt(np.mean(flat * flat)))
+            AppHelper.callAfter(self._overlay.set_audio_level, _normalize_audio_level(rms))
 
     def _start_recording_locked(self):
         try:
