@@ -2,7 +2,8 @@
 Shared text formatting utilities for RoastMyAudio.
 
 Converts raw Whisper transcriptions into clean, human-readable text.
-Handles spoken commands, punctuation, capitalization, and list formatting.
+Handles real-time voice editing commands ("scratch that", "delete last line"),
+punctuation, capitalization, and list formatting.
 """
 
 import re
@@ -27,6 +28,8 @@ SPOKEN_COMMAND_REPLACEMENTS = [
     (r"\b(exclamation\s+mark|exclamation\s+point)\b", "!"),
     (r"\b(colon)\b", ":"),
     (r"\b(semicolon)\b", ";"),
+    (r"\b(hyphen|dash)\b", "-"),
+    (r"\b(forward\s+slash|slash)\b", "/"),
 ]
 
 COMPILED_SPOKEN_COMMAND_REPLACEMENTS = [
@@ -42,29 +45,48 @@ ORDINAL_ORDER = {
 # ---------------------------------------------------------------------------
 # Pre-compiled regex patterns
 # ---------------------------------------------------------------------------
+SCRATCH_CMD_RE = re.compile(
+    r"\b(?:scratch\s+that|undo\s+that|delete\s+that|cancel\s+that|never\s+mind)\b",
+    re.IGNORECASE,
+)
+
+DELETE_LAST_LINE_RE = re.compile(
+    r"(?:\n|^)[^\n]*?\b(?:delete|scratch|erase|remove)\s+(?:the\s+)?last\s+line\b[^\n]*",
+    re.IGNORECASE,
+)
+
 STEP_NUMBER_RE = re.compile(
     r"\b(step|point|number|item)\s+(\d+)\b\s*(?:is|:)?\s*", re.IGNORECASE
 )
+
 COMMAND_TRIGGER_RE = re.compile(
     r"\b(new\s+paragraph|new\s+line|line\s+break|next\s+line|"
     r"bullet|dash\s+point|comma|period|full\s+stop|dot|question\s+mark|"
-    r"exclamation\s+mark|exclamation\s+point|colon|semicolon|open\s+quote|"
-    r"close\s+quote|quote\s+unquote|open\s+parenthesis|close\s+parenthesis|"
-    r"open\s+bracket|close\s+bracket|step\s+\d+|point\s+\d+|number\s+\d+|item\s+\d+)\b",
+    r"exclamation\s+mark|exclamation\s+point|colon|semicolon|hyphen|dash|"
+    r"forward\s+slash|slash|open\s+quote|close\s+quote|quote\s+unquote|"
+    r"open\s+parenthesis|close\s+parenthesis|open\s+bracket|close\s+bracket|"
+    r"step\s+\d+|point\s+\d+|number\s+\d+|item\s+\d+|"
+    r"scratch\s+that|undo\s+that|delete\s+that|cancel\s+that|never\s+mind|"
+    r"delete\s+(?:the\s+)?last\s+line|scratch\s+(?:the\s+)?last\s+line)\b",
     re.IGNORECASE,
 )
+
 ORDINAL_PATTERN = re.compile(
     r"\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)"
     r"(?:\s+one)?\s*(?:is|:)?\s+",
     re.IGNORECASE,
 )
+
 FAST_PATH_BYPASS_RE = re.compile(
     r"\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|"
     r"step\s+\d+|point\s+\d+|number\s+\d+|item\s+\d+|bullet|new\s+line|"
     r"new\s+paragraph|comma|period|question\s+mark|exclamation\s+mark|"
-    r"colon|semicolon|open\s+quote|close\s+quote|open\s+parenthesis|close\s+parenthesis)\b",
+    r"colon|semicolon|hyphen|dash|slash|open\s+quote|close\s+quote|"
+    r"open\s+parenthesis|close\s+parenthesis|scratch\s+that|undo\s+that|"
+    r"delete\s+that|cancel\s+that|never\s+mind|delete\s+(?:the\s+)?last\s+line)\b",
     re.IGNORECASE,
 )
+
 WHITESPACE_RE = re.compile(r"\s+")
 CAP_AFTER_PUNCT_RE = re.compile(r"([.!?]\s+)([a-z])")
 PUNCT_SPACING_BEFORE_RE = re.compile(r"\s+([,.;:!?])")
@@ -118,7 +140,8 @@ def filter_hallucinations(text: str) -> str:
 
     if word_counts:
         most_common = max(word_counts, key=word_counts.get)
-        if word_counts[most_common] / total > 0.1:
+        count = word_counts[most_common]
+        if count >= 3 and (count / total > 0.4 or (total >= 10 and count / total > 0.3)):
             filtered = [w for w in words if w.lower().rstrip(".,!?;:") != most_common]
             if filtered:
                 return filter_hallucinations(" ".join(filtered))
@@ -145,6 +168,82 @@ def filter_hallucinations(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Voice Editing Commands Engine
+# ---------------------------------------------------------------------------
+def _process_scratch_commands(text: str) -> str:
+    """
+    Handle voice editing commands: "scratch that", "undo that", "delete that",
+    "cancel that", "never mind".
+
+    Rules:
+    - If the utterance is solely the command, return "" (complete cancellation).
+    - If preceded by text in the same sentence/clause, erase the preceding clause.
+    - If separated by a prior sentence/newline, preserve previous complete sentences.
+    """
+    if not SCRATCH_CMD_RE.search(text):
+        return text
+
+    # Check if entire text is a cancel command
+    clean_stripped = re.sub(r"[^\w\s]", "", text).strip()
+    if SCRATCH_CMD_RE.fullmatch(clean_stripped):
+        return ""
+
+    # Process each scratch command occurrence
+    while True:
+        match = SCRATCH_CMD_RE.search(text)
+        if not match:
+            break
+
+        start_idx, end_idx = match.span()
+        before = text[:start_idx].rstrip(" ,;:")
+        after = text[end_idx:].lstrip(" ,;:")
+
+        if not before:
+            # Command at the very beginning -> just remove the command
+            text = after
+            continue
+
+        # Look for sentence / line boundary in `before`
+        # Matches last sentence-ending punctuation or newline
+        last_boundary = -1
+        for sep in ("\n", ". ", "! ", "? "):
+            pos = before.rfind(sep)
+            if pos != -1:
+                last_boundary = max(last_boundary, pos + len(sep))
+
+        if last_boundary > 0:
+            # Preserve text before boundary, discard the scratched clause
+            text = before[:last_boundary] + after
+        else:
+            # Discard entire `before`
+            text = after
+
+    return text.strip()
+
+
+def _process_delete_line_commands(text: str) -> str:
+    """
+    Handle "delete last line", "scratch last line", "erase last line".
+    Removes the prior line in a multiline dictation.
+    """
+    if not re.search(r"\b(?:delete|scratch|erase|remove)\s+(?:the\s+)?last\s+line\b", text, re.IGNORECASE):
+        return text
+
+    lines = text.split("\n")
+    processed_lines: list[str] = []
+
+    for line in lines:
+        if re.search(r"\b(?:delete|scratch|erase|remove)\s+(?:the\s+)?last\s+line\b", line, re.IGNORECASE):
+            # Erase previous line if one exists
+            if processed_lines:
+                processed_lines.pop()
+        else:
+            processed_lines.append(line)
+
+    return "\n".join(processed_lines)
+
+
+# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 def _clean_text(text: str) -> str:
@@ -159,10 +258,21 @@ def _clean_text(text: str) -> str:
 def _apply_spoken_commands(text: str) -> str:
     if not COMMAND_TRIGGER_RE.search(text):
         return text
-    result = text
+
+    # 1. First resolve voice editing corrections ("scratch that", "undo that")
+    result = _process_scratch_commands(text)
+    if not result:
+        return ""
+
+    # 2. Apply standard spoken symbol / layout commands
     for pattern, replacement in COMPILED_SPOKEN_COMMAND_REPLACEMENTS:
         result = pattern.sub(replacement, result)
+
     result = STEP_NUMBER_RE.sub(r"\n\2. ", result)
+
+    # 3. Process line-level editing commands ("delete last line")
+    result = _process_delete_line_commands(result)
+
     return result
 
 
@@ -276,13 +386,13 @@ def _normalize_numbered_lists(text: str) -> str:
 # ---------------------------------------------------------------------------
 def format_transcript(text: str) -> str:
     """
-    Full formatting pipeline: spoken commands → structure → punctuation → capitalization.
+    Full formatting pipeline: voice editing commands → structure → punctuation → capitalization.
     """
     if not text or not text.strip():
         return ""
     stripped = text.strip()
 
-    # Fast path: plain prose with no formatting commands
+    # Fast path: plain prose with no formatting or editing commands
     if not FAST_PATH_BYPASS_RE.search(stripped):
         plain = _clean_text(stripped)
         if plain and plain[-1] not in ".!?":
@@ -290,6 +400,8 @@ def format_transcript(text: str) -> str:
         return plain
 
     commanded = _apply_spoken_commands(stripped).strip()
+    if not commanded:
+        return ""
 
     # Auto-detect ordinal step lists ("first … second … third …")
     if "\n" not in commanded and "- " not in commanded:

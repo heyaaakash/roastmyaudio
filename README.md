@@ -100,7 +100,7 @@ Then open **http://127.0.0.1:5000** in your browser.
 - ✅ **Responsive design** — Desktop, tablet, and mobile friendly
 
 ### Optional Enhancements
-- ✅ **LLM cleanup** — Run local [Ollama](https://ollama.ai) to fix grammar and remove filler words
+- ✅ **Embedded AI cleanup** — Metal GPU accelerated local LLM (Qwen2.5-0.5B / SmolLM2-360M) to fix grammar, punctuation, self-corrections, and remove filler words with zero external software
 - ✅ **Environment variable config** — Override settings without editing code
 
 ---
@@ -109,22 +109,21 @@ Then open **http://127.0.0.1:5000** in your browser.
 
 **All processing happens on your computer:**
 
-- 🔐 Models stored in `cache/models/` (local project folder)
+- 🔐 Models stored in `cache/models/` and `cache/llm/` (local project folder)
 - 📝 History saved in `data/history.json` (local project folder)
 - ⚙️ Settings in `data/settings.json` (local project folder)
-- 🌐 **Zero external API calls** (except optional Ollama, which also runs locally)
+- 🌐 **Zero external API calls** (100% offline in-process execution)
 - 🚫 **No telemetry, analytics, or crash reporting**
 
 **Internet required only for:**
-- Initial model download (one-time, ~140 MB for `base` model)
-- Optional Ollama LLM integration (runs on `localhost:11434`)
+- Initial model download (one-time, cached locally)
 
 ---
 
 ## System Requirements
 
 ### macOS Menu Bar App
-- **macOS 11+** (Big Sur or later)
+- **macOS 11+** (Big Sur or later, Apple Silicon recommended for Metal GPU acceleration)
 - **Python 3.9+**
 - **2 GB+ free disk** (for models; 140 MB minimum with `tiny` model)
 - **2–8 GB RAM** (depends on model size; `tiny` needs ~1 GB, `base` needs ~2-3 GB)
@@ -164,8 +163,7 @@ Settings auto-save when changed in the app menu. You can also override via envir
 ```bash
 export WHISPER_MODEL=small            # tiny, base (default), small, medium, large
 export WHISPER_LANGUAGE=es            # en (default), es, fr, de, zh, ja, pt, it, ko, ru
-export OLLAMA_URL=http://localhost:11434/api/generate
-export OLLAMA_MODEL=llama3.2:1b       # Requires Ollama running locally
+export LLM_MODEL=qwen2.5-0.5b         # qwen2.5-0.5b (default), smollm2-360m
 ```
 
 Or create `config/.env` and add these variables:

@@ -1,58 +1,439 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Whisper Web MVP</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-  </head>
-  <body>
-    <main class="container">
-      <h1>Speech to Text</h1>
-      <p class="subtitle">Press record, speak, then stop to transcribe.</p>
-
-      <div class="controls-row">
-        <label for="modelSelect">Model</label>
-        <select id="modelSelect" aria-label="Whisper model selector"></select>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow — Voice Dictation & Audio History</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top macOS Window Bar -->
+    <header class="window-titlebar">
+      <div class="window-controls">
+        <span class="traffic-dot red"></span>
+        <span class="traffic-dot yellow"></span>
+        <span class="traffic-dot green"></span>
       </div>
-
-      <div class="controls-row">
-        <input type="checkbox" id="strictModeCheckbox" />
-        <label for="strictModeCheckbox">Strict Mode (no changes to text)</label>
+      <div class="window-title">
+        <button id="sidebarToggleBtn" class="icon-btn" title="Toggle Sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18"/></svg>
+        </button>
       </div>
-
-      <button id="recordBtn" class="record-btn" type="button">Start Recording</button>
-
-      <p id="status" class="status">Idle</p>
-
-      <section class="live-preview">
-        <div class="output-header">
-          <h2>Live Preview</h2>
-          <span class="live-pill">Low latency</span>
+      <div class="window-actions">
+        <button class="icon-btn header-notif-btn" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot"></span>
+        </button>
+        <div class="user-avatar" title="Account">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
-        <div id="livePreview" class="live-text">Waiting for speech...</div>
-      </section>
+      </div>
+    </header>
 
-      <section class="output">
-        <div class="output-header">
-          <h2>Transcript</h2>
-          <div class="view-toggle" role="group" aria-label="Transcript view toggle">
-            <button id="formattedViewBtn" class="toggle-btn active" type="button">Formatted</button>
-            <button id="rawViewBtn" class="toggle-btn" type="button">Raw</button>
+    <div class="app-body">
+      <!-- Left Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <div class="brand-header">
+          <div class="brand-logo">
+            <svg class="brand-wave-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 10v4h2v-4H4zm4-4v12h2V6H8zm4-4v20h2V2h-2zm4 4v12h2V6h-2zm4 4v4h2v-4h-2z"/>
+            </svg>
+            <span class="brand-name">Flow</span>
           </div>
+          <span class="badge-basic">Basic</span>
         </div>
-        <textarea id="transcript" readonly placeholder="Your transcribed text will appear here..."></textarea>
-      </section>
 
-      <section class="history">
-        <div class="output-header">
-          <h2>History</h2>
-          <button id="clearHistoryBtn" class="toggle-btn" type="button">Clear</button>
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-tab="dictation">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+            <span>Dictation</span>
+          </button>
+
+          <button class="nav-item" data-tab="notetaker">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Notetaker</span>
+            <span class="badge-new">New!</span>
+          </button>
+
+          <button class="nav-item" data-tab="insights">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            <span>Insights</span>
+          </button>
+
+          <button class="nav-item" data-tab="dictionary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+            <span>Dictionary</span>
+          </button>
+
+          <button class="nav-item" data-tab="snippets">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+            <span>Snippets</span>
+          </button>
+
+          <button class="nav-item" data-tab="style">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            <span>Style</span>
+          </button>
+
+          <button class="nav-item" data-tab="transforms">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            <span>Transforms</span>
+          </button>
+
+          <button class="nav-item" data-tab="scratchpad">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+            <span>Scratchpad</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-quota-card">
+          <div class="quota-remaining"><span id="quotaWordsCount">1,631</span> words remaining</div>
+          <div class="quota-desc">You get 2,000 words per week. Upgrade for unlimited access.</div>
+          <button class="btn-upgrade-pro" id="upgradeProBtn">Upgrade to Pro</button>
         </div>
-        <div id="historyList" class="history-list"></div>
-      </section>
-    </main>
 
-    <script src="/static/app.js"></script>
-  </body>
+        <div class="sidebar-footer">
+          <button class="footer-link-btn" id="inviteTeamBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Invite your team</span>
+          </button>
+
+          <button class="footer-link-btn" id="freeMonthBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+            <span>Get a free month</span>
+          </button>
+
+          <button class="footer-link-btn" id="openSettingsBtn" data-tab="settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
+            <span class="badge-count">1</span>
+          </button>
+
+          <button class="footer-link-btn" id="openHelpBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Help</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main App Content -->
+      <main class="main-content">
+        <!-- TAB: DICTATION (Main Wispr Flow History) -->
+        <section class="tab-view active" id="tab-dictation">
+          <div class="content-header">
+            <h1 class="welcome-heading">Welcome back, <span id="userNameGreeting">Aakash</span></h1>
+          </div>
+
+          <!-- Top Hero Grid -->
+          <div class="hero-grid">
+            <!-- Left Hero Banner -->
+            <div class="hero-banner">
+              <div class="hero-banner-content">
+                <h2 class="hero-title">Make Flow sound like <em>you</em></h2>
+                <p class="hero-subtitle">Set up different writing styles for different apps.</p>
+                <button class="btn-start-now" id="startStyleBannerBtn">Start now</button>
+              </div>
+              <div class="hero-banner-art">
+                <div class="ambient-glow"></div>
+              </div>
+            </div>
+
+            <!-- Right Stats Widget Card -->
+            <div class="stats-card">
+              <div class="stats-metrics">
+                <div class="stat-item">
+                  <div class="stat-value" id="statTotalWords">35.5K</div>
+                  <div class="stat-label">total words</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value" id="statWpm">106</div>
+                  <div class="stat-label">wpm</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value" id="statStreak">1</div>
+                  <div class="stat-label">day streak</div>
+                </div>
+              </div>
+
+              <div class="voice-profile-box" id="voiceProfileBox">
+                <button class="close-box-btn" id="closeVoiceProfileBtn" title="Dismiss">✕</button>
+                <div class="profile-title">Voice Profile Unlocked!</div>
+                <div class="profile-subtitle">Discover your unique insights</div>
+                <button class="btn-create-report" id="createReportBtn">Create report</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timeline Section -->
+          <div class="timeline-container">
+            <!-- Search & Actions Bar -->
+            <div class="timeline-toolbar">
+              <div class="quick-mic-action">
+                <button class="btn-record-mic" id="webRecordBtn" title="Record Voice">
+                  <svg class="mic-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  <span id="webRecordLabel">Dictate Now</span>
+                </button>
+                <span class="live-rec-timer" id="webRecTimer" style="display:none;">0:00</span>
+              </div>
+
+              <div class="search-box">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="timelineSearchInput" placeholder="Search transcriptions..." autocomplete="off">
+              </div>
+            </div>
+
+            <!-- Grouped Recordings Timeline List -->
+            <div class="timeline-list" id="timelineList">
+              <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading your recordings...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: NOTETAKER -->
+        <section class="tab-view" id="tab-notetaker">
+          <div class="view-header">
+            <h2>AI Notetaker</h2>
+            <p>Automatically summarize meetings, voice memos, and generate action items.</p>
+          </div>
+          <div class="notetaker-canvas">
+            <div class="notetaker-toolbar">
+              <button class="btn-primary" id="startMeetingBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                Start Meeting Notes
+              </button>
+            </div>
+            <div class="notes-editor" contenteditable="true" placeholder="Meeting transcript and structured notes will appear here...">
+              <h3>Meeting Notes Template</h3>
+              <p><strong>Date:</strong> August 15, 2026</p>
+              <h4>Key Discussion Points:</h4>
+              <ul>
+                <li>Mac menu bar audio recording with persistent WAV caching</li>
+                <li>Whisperflow-style one-click retry for LLM cleanup and speech regeneration</li>
+              </ul>
+              <h4>Action Items:</h4>
+              <ul>
+                <li>[x] Deliver full interactive dashboard matching screenshot</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: INSIGHTS -->
+        <section class="tab-view" id="tab-insights">
+          <div class="view-header">
+            <h2>Voice Insights & Analytics</h2>
+            <p>Track your speech speed, words spoken, and time saved compared to typing.</p>
+          </div>
+          <div class="insights-grid">
+            <div class="insight-card">
+              <div class="insight-number" id="insightTotalWords">35,500</div>
+              <div class="insight-label">Total Words Spoken</div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-number" id="insightAvgWpm">106 WPM</div>
+              <div class="insight-label">Average Speaking Speed</div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-number" id="insightHoursSaved">4.2 hrs</div>
+              <div class="insight-label">Typing Time Saved</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: DICTIONARY -->
+        <section class="tab-view" id="tab-dictionary">
+          <div class="view-header">
+            <h2>Personal Dictionary</h2>
+            <p>Add technical terms, proper nouns, and unique names so Whisper recognizes them accurately.</p>
+          </div>
+          <div class="dictionary-container">
+            <div class="dict-input-row">
+              <input type="text" id="newDictWordInput" placeholder="Add a word or phrase (e.g., PyTorch, Aakash, LLama)...">
+              <button class="btn-primary" id="addDictWordBtn">Add Word</button>
+            </div>
+            <div class="dict-tags" id="dictTagsList"></div>
+          </div>
+        </section>
+
+        <!-- TAB: SNIPPETS -->
+        <section class="tab-view" id="tab-snippets">
+          <div class="view-header">
+            <h2>Voice Snippets</h2>
+            <p>Create short trigger phrases that instantly expand into longer templates.</p>
+          </div>
+          <div class="snippets-list">
+            <div class="snippet-card">
+              <div class="snippet-trigger">"my calendar link"</div>
+              <div class="snippet-arrow">➔</div>
+              <div class="snippet-expansion">Feel free to pick a convenient slot on my calendar: https://cal.com/aakash</div>
+            </div>
+            <div class="snippet-card">
+              <div class="snippet-trigger">"bug report template"</div>
+              <div class="snippet-arrow">➔</div>
+              <div class="snippet-expansion">**Issue Description:**\n**Steps to Reproduce:**\n**Expected vs Actual:**</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: STYLE -->
+        <section class="tab-view" id="tab-style">
+          <div class="view-header">
+            <h2>App Writing Styles</h2>
+            <p>Automatically adjust your tone and formatting depending on the active application.</p>
+          </div>
+          <div class="style-cards-grid">
+            <div class="style-card">
+              <div class="style-app-name">Slack / Messages</div>
+              <div class="style-tone-badge">Casual & Friendly</div>
+              <p>Short sentences, natural conversational tone, friendly emojis when appropriate.</p>
+            </div>
+            <div class="style-card">
+              <div class="style-app-name">Mail / Outlook</div>
+              <div class="style-tone-badge">Formal Email</div>
+              <p>Professional greetings, polished sentence structures, clear paragraphs.</p>
+            </div>
+            <div class="style-card">
+              <div class="style-app-name">Cursor / Xcode / GitHub</div>
+              <div class="style-tone-badge">Technical & Precise</div>
+              <p>CamelCase / snake_case code identifiers preserved, concise technical wording.</p>
+            </div>
+            <div class="style-card">
+              <div class="style-app-name">Notion / Notes</div>
+              <div class="style-tone-badge">Structured & Clear</div>
+              <p>Bullet lists, headers, clean organization for thoughts and notes.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: TRANSFORMS -->
+        <section class="tab-view" id="tab-transforms">
+          <div class="view-header">
+            <h2>AI Transforms</h2>
+            <p>One-click transforms to rewrite any voice transcript on demand.</p>
+          </div>
+          <div class="transforms-grid">
+            <div class="transform-preset-card" data-transform="formal">
+              <div class="transform-title">Executive / Formal</div>
+              <p>Elevate tone into professional, board-ready communication.</p>
+            </div>
+            <div class="transform-preset-card" data-transform="casual">
+              <div class="transform-title">Casual Chat</div>
+              <p>Relaxed and punchy for team chats and messaging.</p>
+            </div>
+            <div class="transform-preset-card" data-transform="bullets">
+              <div class="transform-title">Bullet Points</div>
+              <p>Extract core takeaways into concise bulleted lists.</p>
+            </div>
+            <div class="transform-preset-card" data-transform="concise">
+              <div class="transform-title">Ultra Concise</div>
+              <p>Strip all filler and summarize into one clear sentence.</p>
+            </div>
+            <div class="transform-preset-card" data-transform="meeting_notes">
+              <div class="transform-title">Action Items</div>
+              <p>Structure into Key Takeaways and To-Do lists.</p>
+            </div>
+            <div class="transform-preset-card" data-transform="grammar_only">
+              <div class="transform-title">Fix Grammar Only</div>
+              <p>Fix spelling and punctuation without changing wording.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: SCRATCHPAD -->
+        <section class="tab-view" id="tab-scratchpad">
+          <div class="view-header">
+            <h2>Live Scratchpad</h2>
+            <p>A persistent canvas to speak, edit, and copy formatted drafts.</p>
+          </div>
+          <div class="scratchpad-editor" contenteditable="true" id="scratchpadCanvas" placeholder="Click Dictate or hold Fn to stream voice text here..."></div>
+        </section>
+
+        <!-- TAB: SETTINGS -->
+        <section class="tab-view" id="tab-settings">
+          <div class="view-header">
+            <h2>App Settings & Models</h2>
+            <p>Configure local Whisper models, embedded Metal LLM engines, and hotkeys.</p>
+          </div>
+          <div class="settings-form">
+            <div class="setting-group">
+              <label>Whisper Speech-to-Text Model</label>
+              <select id="settingWhisperModel">
+                <option value="tiny.en">tiny.en (Fastest, ~75MB)</option>
+                <option value="base" selected>base (Default, ~145MB)</option>
+                <option value="small">small (High accuracy, ~480MB)</option>
+                <option value="medium">medium (Very high accuracy, ~1.5GB)</option>
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label>Embedded Local LLM Engine (Metal GPU)</label>
+              <select id="settingLlmModel">
+                <option value="qwen2.5-0.5b" selected>Qwen 2.5 0.5B Instruct (Fast & Accurate)</option>
+                <option value="smollm2-360m">SmolLM2 360M Instruct (Ultra-fast)</option>
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label>Dictation Hotkey</label>
+              <input type="text" value="Hold Fn Key (or Ctrl + Option + D)" disabled>
+            </div>
+
+            <div class="setting-group">
+              <label>Audio Persistence</label>
+              <input type="text" value="Active (Saved to data/recordings/*.wav)" disabled>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Re-transcribe Modal -->
+  <div class="modal-backdrop" id="retranscribeModal" style="display:none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Re-transcribe Audio Recording</h3>
+        <button class="modal-close-btn" id="closeRetranscribeModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Choose a Whisper model and language to regenerate this audio transcript from the saved WAV file:</p>
+        <div class="form-group">
+          <label>Whisper Model</label>
+          <select id="modalSelectModel">
+            <option value="base" selected>base (Recommended)</option>
+            <option value="small">small (Higher Accuracy)</option>
+            <option value="medium">medium (Best Accuracy)</option>
+            <option value="tiny.en">tiny.en (Fastest)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Language</label>
+          <select id="modalSelectLang">
+            <option value="en" selected>English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="auto">Auto-detect</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelRetranscribeBtn">Cancel</button>
+        <button class="btn-primary" id="confirmRetranscribeBtn">Re-transcribe Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/static/app.js"></script>
+</body>
 </html>

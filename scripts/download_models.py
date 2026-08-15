@@ -19,14 +19,16 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# Add config to path
-CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
-if str(CONFIG_DIR) not in sys.path:
-    sys.path.insert(0, str(CONFIG_DIR))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CONFIG_DIR = PROJECT_ROOT / "config"
+for _p in (str(PROJECT_ROOT), str(CONFIG_DIR)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from faster_whisper import WhisperModel  # noqa: E402
 
-from config import MODELS_CACHE_DIR  # noqa: E402
+from config import LLM_CACHE_DIR, MODELS_CACHE_DIR, SUPPORTED_LLM_MODELS  # noqa: E402
+from src.shared.llm_cleanup import ensure_model_file  # noqa: E402
 
 # Models supported by faster-whisper (same names as openai-whisper).
 AVAILABLE_MODELS = [
@@ -38,10 +40,11 @@ AVAILABLE_MODELS = [
     "turbo",
 ]
 
+AVAILABLE_LLM_MODELS = list(SUPPORTED_LLM_MODELS.keys())
 
 DEFAULT_MODEL = "base"
 # Models recommended for most users (small footprint, good accuracy).
-RECOMMENDED_MODELS = ["tiny.en", "base"]
+RECOMMENDED_MODELS = ["tiny.en", "base", "qwen2.5-0.5b"]
 
 
 def log(message: str):
@@ -50,20 +53,21 @@ def log(message: str):
     print(f"[{timestamp}] {message}", flush=True)
 
 
-def _is_model_cached(model_name: str) -> bool:
-    """
-    Best-effort check for whether a faster-whisper model is already on disk.
+ALL_AVAILABLE_MODELS = AVAILABLE_MODELS + AVAILABLE_LLM_MODELS
 
-    faster-whisper stores each model under a HF-style directory keyed by a
-    hashed repo id (e.g. models--Systran--faster-whisper-base). We glob for
-    the model name suffix to detect an existing download.
-    """
+
+def _is_model_cached(model_name: str) -> bool:
+    """Check if either a Whisper model or an LLM model is cached on disk."""
+    if model_name in AVAILABLE_LLM_MODELS:
+        filename = SUPPORTED_LLM_MODELS[model_name]["filename"]
+        target = LLM_CACHE_DIR / filename
+        return target.exists() and target.stat().st_size > 1_000_000
+
     try:
         pattern = f"*{model_name.replace('.', '-')}*"
         hits = [p for p in MODELS_CACHE_DIR.rglob(pattern) if p.is_dir()]
         if hits:
             return True
-        # Also check for the snapshots/ directory layout that HF uses.
         return any(
             p.is_dir() and model_name.replace(".", "-") in p.name.lower()
             for p in MODELS_CACHE_DIR.rglob("models--*")
@@ -75,15 +79,23 @@ def _is_model_cached(model_name: str) -> bool:
 def _prompt_models() -> list[str]:
     """Interactive model picker (used when -m is omitted)."""
     print()
-    print("Available models (cached models are marked with ✓):")
+    print("Available Speech-to-Text Models (Whisper):")
     print("-" * 56)
     for i, name in enumerate(AVAILABLE_MODELS, 1):
         cached = "  ✓" if _is_model_cached(name) else ""
         rec = "  (recommended)" if name in RECOMMENDED_MODELS else ""
         print(f"  {i:>2}. {name:<16} {get_model_size(name):<8}{cached}{rec}")
+    
+    print("\nAvailable Embedded AI Cleanup Models (Metal GPU):")
+    print("-" * 56)
+    for j, name in enumerate(AVAILABLE_LLM_MODELS, len(AVAILABLE_MODELS) + 1):
+        cached = "  ✓" if _is_model_cached(name) else ""
+        rec = "  (recommended)" if name in RECOMMENDED_MODELS else ""
+        print(f"  {j:>2}. {name:<16} {get_model_size(name):<8}{cached}{rec}")
+
     print("-" * 56)
     print("Enter one or more numbers/names separated by spaces, or:")
-    print("  a   = download ALL models")
+    print("  a   = download ALL models (Whisper + LLM)")
     print(f"  r   = download RECOMMENDED ({', '.join(RECOMMENDED_MODELS)})")
     print("Enter to skip and exit.")
     print()
@@ -100,7 +112,7 @@ def _prompt_models() -> list[str]:
 
         raw_l = raw.lower()
         if raw_l == "a":
-            return list(AVAILABLE_MODELS)
+            return list(ALL_AVAILABLE_MODELS)
         if raw_l == "r":
             return list(RECOMMENDED_MODELS)
 
@@ -110,14 +122,14 @@ def _prompt_models() -> list[str]:
         for tok in tokens:
             if tok.isdigit():
                 idx = int(tok)
-                if 1 <= idx <= len(AVAILABLE_MODELS):
-                    chosen.append(AVAILABLE_MODELS[idx - 1])
+                if 1 <= idx <= len(ALL_AVAILABLE_MODELS):
+                    chosen.append(ALL_AVAILABLE_MODELS[idx - 1])
                     continue
                 print(f"  ❌ Number {idx} out of range")
                 valid = False
                 break
             tok_l = tok.lower()
-            if tok_l in AVAILABLE_MODELS:
+            if tok_l in ALL_AVAILABLE_MODELS:
                 chosen.append(tok_l)
                 continue
             print(f"  ❌ Unknown model: {tok}")
@@ -145,6 +157,8 @@ def get_model_size(model_name: str) -> str:
         "large-v3": "3GB",
         "large-v3-turbo": "1.6GB",
         "turbo": "1.5GB",
+        "qwen2.5-0.5b": "350MB",
+        "smollm2-360m": "220MB",
     }
     return sizes.get(model_name, "unknown size")
 
@@ -162,10 +176,25 @@ def download_and_cache_model(model_name: str, device: str = "auto"):
 
     model_name = model_name.strip().lower()
 
-    # Validate model name
+    if model_name in AVAILABLE_LLM_MODELS:
+        info = SUPPORTED_LLM_MODELS[model_name]
+        log(f"📥 Downloading LLM model: {info['display_name']} ({get_model_size(model_name)})")
+        log(f"   Destination: {LLM_CACHE_DIR}")
+        try:
+            start_time = time.time()
+            path = ensure_model_file(model_name)
+            elapsed_sec = time.time() - start_time
+            log(f"✅ Downloaded and cached LLM in {elapsed_sec:.1f}s")
+            log(f"   File: {path.name}")
+            return True
+        except Exception as e:
+            log(f"❌ Failed to download LLM {model_name}: {e}")
+            return False
+
+    # Validate Whisper model name
     if model_name not in AVAILABLE_MODELS:
         log(f"❌ Unknown model: {model_name}")
-        log(f"   Available models: {', '.join(AVAILABLE_MODELS)}")
+        log(f"   Available models: {', '.join(ALL_AVAILABLE_MODELS)}")
         return False
 
     log(f"📥 Downloading model: {model_name} ({get_model_size(model_name)})")
@@ -174,9 +203,6 @@ def download_and_cache_model(model_name: str, device: str = "auto"):
     try:
         start_time = time.time()
 
-        # faster-whisper downloads from HuggingFace into download_root on
-        # first construction. Use the same settings as the transcriber so the
-        # cached files are a perfect match (no re-download at runtime).
         WhisperModel(
             model_name,
             device=_resolve_device(device),

@@ -90,7 +90,7 @@ class AudioRecorder:
     def _callback(self, indata: np.ndarray, frames: int, time_info, status):
         """Non-blocking callback — append a copy of each audio chunk."""
         if status:
-            return
+            pass  # Buffer warning, still keep the valid audio frames
         self._chunks.append(indata.copy())
 
     # ------------------------------------------------------------------
@@ -106,7 +106,7 @@ class AudioRecorder:
 
         def _cb(indata, frames, time_info, status):
             self._callback(indata, frames, time_info, status)
-            if extra_callback and not status:
+            if extra_callback:
                 extra_callback(indata.copy().reshape(-1))
 
         self._stream = sd.InputStream(

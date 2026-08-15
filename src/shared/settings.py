@@ -23,10 +23,14 @@ DEFAULTS: dict[str, Any] = {
     "model": "base",
     "language": "en",
     "language_label": "English",
-    "hotkey": "fn",          # "fn" or "ctrl_option_d"
+    "hotkey": "fn",                  # "fn" or "ctrl_option_d"
+    "dictation_mode": "push_to_talk",  # "push_to_talk" or "hands_free"
+    "context_awareness": True,        # Smart App + Clipboard context injection
+    "voice_commands": True,           # Voice editing commands ("scratch that", etc.)
+    "haptics_enabled": True,          # macOS trackpad haptic feedback
     "llm_enabled": True,
-    "ollama_model": "llama3.2:1b",
-    "device_id": None,       # None = system default microphone
+    "llm_model": "qwen2.5-0.5b",
+    "device_id": None,               # None = system default microphone
 }
 
 

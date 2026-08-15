@@ -13,6 +13,7 @@ from src.apps.macos.hud_overlay import (  # noqa: E402
     DictationOverlay,
     _bar_x_positions,
     _normalize_audio_level,
+    trigger_haptic,
 )
 
 
@@ -80,8 +81,13 @@ class TestOverlayUnavailable:
         ov.show()
         ov.hide()
         ov.set_title("Dictating · base")
+        ov.set_mode_badge("Code")
         ov.set_preview_text("hello world")
         ov.set_audio_level(0.6)
         ov.reset_waveform()
         assert ov.window is None
         assert ov._waveform is None
+
+    def test_trigger_haptic_safe(self):
+        # Should not raise any exception
+        trigger_haptic()

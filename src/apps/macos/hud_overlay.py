@@ -1,18 +1,21 @@
 """
 HUD overlay window shown during push-to-talk recording.
 
-A glassmorphic, liquid "pill" overlay floating near the bottom of the screen:
+A world-class, glassmorphic liquid "pill" overlay inspired by Apple Intelligence & macOS Sequoia:
 
-  * translucent NSVisualEffectView (dark HUD vibrancy) with a rounded pill mask
-  * live 5-bar audio waveform visualizer that pulses with the microphone
-  * ghost streaming preview text that cross-fades token-by-token (no flicker)
-  * subtle fade + scale-in when dictation begins, fade-out when it ends
-  * optional micro sound cue on start / stop
-
-The overlay is click-through and never steals focus.
+  * Translucent NSVisualEffectView with dark HUD vibrancy and pill geometry
+  * Sound-reactive 5-bar gradient visualizer (Cyan-to-Violet Siri/Gemini glow) with fluid physics & idle breathing
+  * Live streaming ghost text preview with zero-flicker CATransition cross-fades
+  * Context mode badge indicator ([Code], [Chat], [Email], [Hands-Free])
+  * Apple trackpad haptic micro-ticks & audio feedback cues on start / stop
+  * Click-through borderless window that floats above all spaces without stealing focus
 
 Only available when AppKit (PyObjC) is installed on macOS.
 """
+
+import math
+import random
+from typing import Optional
 
 try:
     import objc
@@ -23,16 +26,18 @@ try:
         NSEvent,
         NSFont,
         NSMouseInRect,
+        NSPanel,
         NSScreen,
-        NSScreenSaverWindowLevel,
         NSSound,
+        NSStatusWindowLevel,
         NSTextField,
         NSView,
         NSVisualEffectView,
-        NSWindow,
+        NSWindowCollectionBehaviorCanJoinAllSpaces,
         NSWindowCollectionBehaviorFullScreenAuxiliary,
-        NSWindowCollectionBehaviorMoveToActiveSpace,
+        NSWindowCollectionBehaviorStationary,
         NSWindowStyleMaskBorderless,
+        NSWindowStyleMaskNonactivatingPanel,
     )
     from Foundation import (
         NSMakeRect,
@@ -40,11 +45,42 @@ try:
         NSRunLoopCommonModes,
         NSTimer,
     )
-    from Quartz import CALayer, CATransaction, CATransition
+    from Quartz import (
+        CAGradientLayer,
+        CATransaction,
+        CATransition,
+    )
 
     APPKIT_AVAILABLE = True
 except Exception:
     APPKIT_AVAILABLE = False
+
+
+# Optional Haptics
+try:
+    from AppKit import (
+        NSHapticFeedbackManager,
+        NSHapticFeedbackPatternGeneric,
+        NSHapticFeedbackPerformanceTimeNow,
+    )
+    HAPTICS_AVAILABLE = True
+except Exception:
+    HAPTICS_AVAILABLE = False
+
+
+def trigger_haptic():
+    """Trigger a subtle haptic feedback pulse on macOS trackpad."""
+    if not HAPTICS_AVAILABLE:
+        return
+    try:
+        performer = NSHapticFeedbackManager.defaultPerformer()
+        if performer is not None:
+            performer.performFeedbackPattern_performanceTime_(
+                NSHapticFeedbackPatternGeneric,
+                NSHapticFeedbackPerformanceTimeNow,
+            )
+    except Exception:
+        pass
 
 
 # Visual-effect material / blending / state enums (kept as ints for ABI safety).
@@ -53,13 +89,13 @@ _BLENDING_BEHIND_WINDOW = 0
 _VIBRANCY_ACTIVE = 1
 
 # Waveform visualizer geometry & dynamics (pure-Python, testable).
-WAVEFORM_BAR_COUNT = 5
-WAVEFORM_BAR_WIDTH = 5.0
-WAVEFORM_BAR_GAP = 5.0
-WAVEFORM_BAR_MIN_H = 4.0
+WAVEFORM_BAR_COUNT = 14
+WAVEFORM_BAR_WIDTH = 3.5
+WAVEFORM_BAR_GAP = 3.0
+WAVEFORM_BAR_MIN_H = 3.5
 WAVEFORM_TICK_FPS = 60.0
-WAVEFORM_SMOOTHING = 0.35
-WAVEFORM_DECAY = 0.86
+WAVEFORM_SMOOTHING = 0.55
+WAVEFORM_DECAY = 0.85
 
 # RMS (float32 amplitude, 0..1) at which the meter is considered "full".
 _AUDIO_LEVEL_FULL_RMS = 0.08
@@ -94,7 +130,7 @@ def _bar_x_positions(count: int, width: float, gap: float, container_width: floa
 if APPKIT_AVAILABLE:
 
     class _WaveformView(NSView):
-        """Hosts N rounded CALayer bars and animates them from a 0..1 level."""
+        """Hosts 14 vibrant multi-frequency gradient CALayer bars with hyper-fluid sound-reactive physics."""
 
         def initWithFrame_(self, frame):
             self = objc.super(_WaveformView, self).initWithFrame_(frame)
@@ -103,6 +139,7 @@ if APPKIT_AVAILABLE:
             self.setWantsLayer_(True)
             self._target_level = 0.0
             self._displayed = 0.0
+            self._tick_count = 0
             self._timer = None
             self._make_bars()
             return self
@@ -113,12 +150,24 @@ if APPKIT_AVAILABLE:
             root = self.layer()
             root.setBackgroundColor_(NSColor.clearColor().CGColor)
             self._bars = []
-            for _ in range(WAVEFORM_BAR_COUNT):
-                bar = CALayer.layer()
-                bar.setBackgroundColor_(NSColor.whiteColor().CGColor)
+
+            # Dynamic Siri / Gemini multi-stop aurora palette
+            c1 = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.02, 0.71, 0.95, 0.98).CGColor  # Electric Cyan
+            c2 = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.55, 0.27, 0.97, 0.98).CGColor  # Neon Violet
+            c3 = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.96, 0.25, 0.52, 0.98).CGColor  # Hot Pink / Coral
+
+            for i in range(WAVEFORM_BAR_COUNT):
+                bar = CAGradientLayer.layer()
+                # Shift gradient stops per bar across the spectrum
+                if i < WAVEFORM_BAR_COUNT // 2:
+                    bar.setColors_([c1, c2])
+                else:
+                    bar.setColors_([c2, c3])
+                bar.setStartPoint_((0.5, 0.0))
+                bar.setEndPoint_((0.5, 1.0))
                 bar.setCornerRadius_(WAVEFORM_BAR_WIDTH / 2.0)
-                bar.setOpacity_(0.92)
                 bar.setMasksToBounds_(True)
+                bar.setOpacity_(0.95)
                 root.addSublayer_(bar)
                 self._bars.append(bar)
             self._layout_bars()
@@ -171,12 +220,11 @@ if APPKIT_AVAILABLE:
         def reset(self):
             self._target_level = 0.0
             self._displayed = 0.0
+            self._tick_count = 0
             self._layout_bars()
 
         def tick_(self, sender):
-            import math
-            import random
-
+            self._tick_count += 1
             self._displayed += (self._target_level - self._displayed) * WAVEFORM_SMOOTHING
             if self._target_level < 0.0009:
                 self._displayed *= WAVEFORM_DECAY
@@ -188,12 +236,31 @@ if APPKIT_AVAILABLE:
                 WAVEFORM_BAR_COUNT, WAVEFORM_BAR_WIDTH, WAVEFORM_BAR_GAP, W
             )
 
+            # High-energy multi-harmonic traveling waves
+            t = self._tick_count * 0.18
             CATransaction.begin()
             CATransaction.setValue_forKey_(True, "disableActions")
+
             for i, bar in enumerate(self._bars):
-                weight = math.sin(((i + 1) / (WAVEFORM_BAR_COUNT + 1)) * math.pi)
-                jitter = random.uniform(-0.12, 0.12) * max(self._displayed, 0.0)
-                amp = max(0.0, self._displayed * weight + jitter)
+                # Frequency harmonics across 14 bars
+                norm_pos = (i + 0.5) / WAVEFORM_BAR_COUNT
+                weight = math.sin(norm_pos * math.pi)
+
+                freq1 = math.sin(t * 2.2 + i * 0.62)
+                freq2 = math.cos(t * 3.1 - i * 0.48)
+                freq3 = math.sin(t * 1.2 + i * 1.15)
+                wave_harmonic = 0.45 * freq1 + 0.35 * freq2 + 0.20 * freq3
+
+                if self._displayed > 0.015:
+                    # CRAZY sound-reactive voice animation: explosive peaks + dancing harmonic ripples
+                    jitter = random.uniform(-0.18, 0.18) * self._displayed
+                    voice_energy = self._displayed * (0.60 + 0.40 * weight)
+                    amp = voice_energy * (0.85 + 0.55 * wave_harmonic) + jitter
+                    amp = max(0.08, min(1.0, amp))
+                else:
+                    # Mesmerizing idle breathing wave ripple
+                    amp = 0.07 + 0.06 * (0.5 + 0.5 * wave_harmonic) * (0.4 + 0.6 * weight)
+
                 h = max(WAVEFORM_BAR_MIN_H, min(H, amp * H))
                 y = (H - h) / 2.0
                 bar.setFrame_(NSMakeRect(xs[i], y, WAVEFORM_BAR_WIDTH, h))
@@ -217,25 +284,26 @@ else:
 # ---------------------------------------------------------------------------
 class DictationOverlay:
     """
-    Borderless glass pill shown while the user is dictating.
+    World-class borderless glass pill shown while the user is dictating.
 
     Usage:
         overlay = DictationOverlay()          # build once at startup
         overlay.show()                        # call when recording starts
         overlay.set_title("Dictating · base") # optional caption
+        overlay.set_mode_badge("Code")        # optional context badge
         overlay.set_preview_text("...")       # update live preview (ghost text)
         overlay.set_audio_level(0.6)          # update waveform (0..1)
         overlay.hide()                        # call when recording stops
     """
 
-    PILL_WIDTH = 486
-    PILL_HEIGHT = 78
-    BOTTOM_MARGIN = 80
+    PILL_WIDTH = 540
+    PILL_HEIGHT = 80
+    BOTTOM_MARGIN = 84
 
-    WAVEFORM_W = 72
-    WAVEFORM_X = 18
-    TEXT_X = 104
-    TEXT_W_INSET = 116
+    WAVEFORM_W = 96
+    WAVEFORM_X = 22
+    TEXT_X = 132
+    TEXT_W_INSET = 148
 
     def __init__(self):
         self.window = None
@@ -245,6 +313,8 @@ class DictationOverlay:
         self._preview_label = None
         self._cue_start = None
         self._cue_stop = None
+        self._current_mode = ""
+        self._base_title = "Dictating"
         if not APPKIT_AVAILABLE:
             return
         self._build_window()
@@ -259,15 +329,21 @@ class DictationOverlay:
         label.setDrawsBackground_(False)
         label.setEditable_(False)
         label.setSelectable_(False)
-        label.setAlignment_(1)  # NSTextAlignmentCenter
+        label.setAlignment_(0)  # NSTextAlignmentLeft
         label.setWantsLayer_(True)
         label.setFont_(font)
         label.setTextColor_(color)
         return label
 
-    def _pill_frame_for_screen(self, screen_frame):
-        x = screen_frame.origin.x + (screen_frame.size.width - self.PILL_WIDTH) / 2
-        y = screen_frame.origin.y + self.BOTTOM_MARGIN
+    def _pill_frame_for_screen(self, screen_or_frame):
+        if hasattr(screen_or_frame, "visibleFrame"):
+            visible = screen_or_frame.visibleFrame()
+        elif hasattr(screen_or_frame, "origin"):
+            visible = screen_or_frame
+        else:
+            visible = NSScreen.mainScreen().visibleFrame()
+        x = visible.origin.x + (visible.size.width - self.PILL_WIDTH) / 2.0
+        y = visible.origin.y + 130.0
         return NSMakeRect(x, y, self.PILL_WIDTH, self.PILL_HEIGHT)
 
     def _screen_for_current_pointer(self):
@@ -279,86 +355,102 @@ class DictationOverlay:
 
     def _layout_content(self):
         w, h = self.PILL_WIDTH, self.PILL_HEIGHT
-        self._waveform.setFrame_(
-            NSMakeRect(self.WAVEFORM_X, 12, self.WAVEFORM_W, h - 24)
-        )
-        self._title_label.setFrame_(
-            NSMakeRect(self.TEXT_X, h - 26, w - self.TEXT_W_INSET, 14)
-        )
-        self._preview_label.setFrame_(
-            NSMakeRect(self.TEXT_X, 12, w - self.TEXT_W_INSET, h - 40)
-        )
+        if self._waveform is not None:
+            self._waveform.setFrame_(
+                NSMakeRect(self.WAVEFORM_X, 14, self.WAVEFORM_W, h - 28)
+            )
+        if self._title_label is not None:
+            self._title_label.setFrame_(
+                NSMakeRect(self.TEXT_X, h - 28, w - self.TEXT_W_INSET, 16)
+            )
+        if self._preview_label is not None:
+            self._preview_label.setFrame_(
+                NSMakeRect(self.TEXT_X, 12, w - self.TEXT_W_INSET, h - 42)
+            )
 
     def _build_window(self):
         screen = NSScreen.mainScreen()
-        frame = self._pill_frame_for_screen(screen.frame())
+        frame = self._pill_frame_for_screen(screen)
 
-        self.window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
+        self.window = NSPanel.alloc().initWithContentRect_styleMask_backing_defer_(
             frame,
-            NSWindowStyleMaskBorderless,
+            NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel,
             NSBackingStoreBuffered,
             False,
         )
+        self.window.setFloatingPanel_(True)
+        self.window.setBecomesKeyOnlyIfNeeded_(True)
         self.window.setReleasedWhenClosed_(False)
         self.window.setOpaque_(False)
         self.window.setBackgroundColor_(NSColor.clearColor())
-        self.window.setAlphaValue_(0.0)
+        self.window.setAlphaValue_(1.0)
         self.window.setIgnoresMouseEvents_(True)
-        self.window.setLevel_(NSScreenSaverWindowLevel)
+        self.window.setLevel_(NSStatusWindowLevel)
         self.window.setHasShadow_(True)
         self.window.setHidesOnDeactivate_(False)
         self.window.setCanHide_(False)
         self.window.setMovable_(False)
         self.window.setCollectionBehavior_(
-            NSWindowCollectionBehaviorFullScreenAuxiliary
-            | NSWindowCollectionBehaviorMoveToActiveSpace
+            NSWindowCollectionBehaviorCanJoinAllSpaces
+            | NSWindowCollectionBehaviorFullScreenAuxiliary
+            | NSWindowCollectionBehaviorStationary
         )
 
+        # Liquid Frosted Glass Effect View
         ve = NSVisualEffectView.alloc().initWithFrame_(
             NSMakeRect(0, 0, self.PILL_WIDTH, self.PILL_HEIGHT)
         )
-        ve.setBlendingMode_(_BLENDING_BEHIND_WINDOW)
-        ve.setMaterial_(_MATERIAL_HUD)
-        ve.setState_(_VIBRANCY_ACTIVE)
+        ve.setBlendingMode_(1)  # NSVisualEffectBlendingModeWithinWindow
+        ve.setMaterial_(2)      # NSVisualEffectMaterialDark
+        ve.setState_(1)         # NSVisualEffectStateActive
         ve.setWantsLayer_(True)
+
+        # Pill Corner Geometry & Specular Border Rim
         ve.layer().setCornerRadius_(self.PILL_HEIGHT / 2.0)
         ve.layer().setMasksToBounds_(True)
-        ve.layer().setBorderWidth_(1.0)
+        ve.layer().setBorderWidth_(1.5)
         ve.layer().setBorderColor_(
-            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.14).CGColor
+            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.25).CGColor
+        )
+        ve.layer().setBackgroundColor_(
+            NSColor.colorWithCalibratedRed_green_blue_alpha_(0.10, 0.11, 0.14, 0.96).CGColor
         )
         self._visual_effect = ve
         self.window.setContentView_(ve)
 
+        # Modern SF Pro Typography
         self._title_label = self._make_label(
-            "Dictating",
-            NSFont.boldSystemFontOfSize_(11.0),
-            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.55),
+            "●  DICTATING",
+            NSFont.boldSystemFontOfSize_(10.5),
+            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.60),
         )
         self._preview_label = self._make_label(
             "Listening...",
-            NSFont.systemFontOfSize_(15.0),
-            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.96),
+            NSFont.systemFontOfSize_(15.5),
+            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.98),
         )
         ve.addSubview_(self._title_label)
         ve.addSubview_(self._preview_label)
 
         self._waveform = _WaveformView.alloc().initWithFrame_(
-            NSMakeRect(self.WAVEFORM_X, 12, self.WAVEFORM_W, self.PILL_HEIGHT - 24)
+            NSMakeRect(self.WAVEFORM_X, 14, self.WAVEFORM_W, self.PILL_HEIGHT - 28)
         )
         ve.addSubview_(self._waveform)
 
+        # Audio Micro-Cue Feedback
         self._cue_start = NSSound.soundNamed_("Tink")
         if self._cue_start is not None:
-            self._cue_start.setVolume_(0.35)
+            self._cue_start.setVolume_(0.28)
         self._cue_stop = NSSound.soundNamed_("Pop")
         if self._cue_stop is not None:
-            self._cue_stop.setVolume_(0.30)
+            self._cue_stop.setVolume_(0.25)
 
         self._layout_content()
         self.window.orderOut_(None)
 
     def _animate_alpha(self, target: float, duration: float, completion=None):
+        if not self.window:
+            return
         NSAnimationContext.beginGrouping()
         ctx = NSAnimationContext.currentContext()
         ctx.setDuration_(duration)
@@ -383,39 +475,55 @@ class DictationOverlay:
         if not self.window:
             return
         screen = self._screen_for_current_pointer()
-        frame = self._pill_frame_for_screen(screen.frame())
+        frame = self._pill_frame_for_screen(screen)
         self.window.setFrame_display_(frame, True)
         self._layout_content()
         if self._waveform is not None:
             self._waveform.reset()
             self._waveform.resume_animation()
         self.set_preview_text("Listening...")
-        self.window.setAlphaValue_(0.0)
+        self.window.setAlphaValue_(1.0)
         self.window.orderFrontRegardless()
-        self._animate_alpha(1.0, 0.16)
         self._play_cue(self._cue_start)
+        trigger_haptic()
 
     def hide(self):
-        """Fade the overlay out and remove it from screen."""
+        """Fade the overlay out and remove it from screen with haptic release."""
         if not self.window:
             return
         if self._waveform is not None:
             self._waveform.pause_animation()
         self._play_cue(self._cue_stop)
+        trigger_haptic()
         self._animate_alpha(0.0, 0.14, self._order_out)
 
     def _order_out(self):
         if self.window is not None:
             self.window.orderOut_(None)
 
-    def set_title(self, text: str):
-        """Update the small caption above the preview text."""
+    def set_title(self, text: str, mode: Optional[str] = None):
+        """Update the small caption with model info and context mode pill."""
         if not self._title_label:
             return
-        self._title_label.setStringValue_((text or "").strip() or "Dictating")
+        self._base_title = (text or "").strip() or "Dictating"
+        if mode:
+            self._current_mode = mode
+
+        # Apple-styled status row with dot indicator and badges
+        if self._current_mode:
+            display_text = f"●  {self._base_title.upper()}  ·  [{self._current_mode.upper()}]"
+        else:
+            display_text = f"●  {self._base_title.upper()}"
+
+        self._title_label.setStringValue_(display_text)
+
+    def set_mode_badge(self, mode: str):
+        """Update the mode badge (e.g. Code, Chat, Email, Hands-Free)."""
+        self._current_mode = (mode or "").strip()
+        self.set_title(self._base_title)
 
     def set_preview_text(self, text: str):
-        """Update the live preview label with a smooth cross-fade."""
+        """Update the live preview label with a smooth zero-flicker cross-fade."""
         if not self._preview_label:
             return
         value = (text or "").strip() or "Listening..."

@@ -33,7 +33,7 @@ RoastMyAudio runs in two modes using **identical transcription logic**:
 Both apps use identical modules for:
 - **Transcription** (`transcriber.py`) — Whisper inference
 - **Formatting** (`formatter.py`) — Spoken command parsing, punctuation
-- **Cleanup** (`llm_cleanup.py`) — Optional Ollama grammar fix
+- **Cleanup** (`llm_cleanup.py`) — Embedded Metal GPU-accelerated LLM cleanup (Qwen2.5-0.5B / SmolLM2-360M)
 - **History** (`history.py`) — Log recent transcriptions
 - **Dictionary** (`dictionary.py`) — Custom terminology
 - **Config** (`settings.py`) — Per-user preferences
@@ -48,9 +48,9 @@ This ensures both platforms produce **identical results** for the same audio inp
 **`config.py`** — Single source of truth for all settings
 
 ```python
-- Paths: PROJECT_ROOT, CACHE_DIR, MODELS_CACHE_DIR, TEMP_UPLOADS_DIR
+- Paths: PROJECT_ROOT, CACHE_DIR, MODELS_CACHE_DIR, LLM_CACHE_DIR, TEMP_UPLOADS_DIR
 - Models: DEFAULT_MODEL, AVAILABLE_MODELS, MODEL_DISPLAY_ORDER
-- Ollama: OLLAMA_URL, OLLAMA_MODEL
+- Embedded LLM: DEFAULT_LLM_MODEL, SUPPORTED_LLM_MODELS
 - macOS: SAMPLE_RATE, LIVE_PREVIEW_INTERVAL_SEC, FALLBACK_HOLD_HOTKEY
 ```
 
@@ -340,20 +340,18 @@ Process Audio
     ↓ [save history]
 ```
 
-### LLM Cleanup Optional Flow
+### LLM Cleanup Data Flow (Embedded Metal)
 
 ```
 Raw Transcript
     ↓ [llm_cleanup.clean()]
-    ↓ [build Ollama prompt with tone]
-    ↓ POST http://localhost:11434/api/generate
-Ollama Server
-    ↓ [load llama3.2:1b from local cache]
-    ↓ [generate cleaned text]
-    ↓ [return response]
-    ↓ [detect meta-commentary]
-    ↓ [compare word overlap]
-    ↓ [fallback to raw if needed]
+    ↓ [format ChatML prompt with app tone]
+Embedded Llama Instance (llama-cpp-python + Metal)
+    ↓ [load Qwen2.5-0.5B / SmolLM2-360M from cache/llm/]
+    ↓ [generate cleaned text directly in GPU memory (<50ms)]
+    ↓ [detect meta-commentary / strip preambles]
+    ↓ [verify word overlap guard (>60%)]
+    ↓ [fallback to raw transcript if invalid]
 Cleaned Transcript
 ```
 

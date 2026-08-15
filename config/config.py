@@ -14,15 +14,17 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = PROJECT_ROOT / "cache"
 MODELS_CACHE_DIR = CACHE_DIR / "models"
 HUGGINGFACE_CACHE_DIR = CACHE_DIR / "cache"
+LLM_CACHE_DIR = CACHE_DIR / "llm"
 
 # Data directories
 DATA_DIR = PROJECT_ROOT / "data"
 TEMP_UPLOADS_DIR = DATA_DIR / "temp_uploads"
 RUNTIME_DIR = DATA_DIR / "runtime"
+RECORDINGS_DIR = DATA_DIR / "recordings"
 
 # Create directories if they don't exist
-for directory in [CACHE_DIR, MODELS_CACHE_DIR, HUGGINGFACE_CACHE_DIR,
-                  TEMP_UPLOADS_DIR, RUNTIME_DIR]:
+for directory in [CACHE_DIR, MODELS_CACHE_DIR, HUGGINGFACE_CACHE_DIR, LLM_CACHE_DIR,
+                  TEMP_UPLOADS_DIR, RUNTIME_DIR, RECORDINGS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 # Environment variables for cache locations
@@ -48,9 +50,22 @@ DEFAULT_MODEL = "base"
 SAMPLE_RATE = 16000
 CHANNELS = 1
 
-# Ollama settings for LLM cleanup
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
-OLLAMA_MODEL = "llama3.2:1b"
+# Embedded local LLM settings (Metal accelerated on Apple Silicon)
+DEFAULT_LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5-0.5b")
+SUPPORTED_LLM_MODELS = {
+    "qwen2.5-0.5b": {
+        "repo_id": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+        "filename": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+        "display_name": "Qwen 2.5 0.5B (Fast & Accurate)",
+        "prompt_format": "chatml",
+    },
+    "smollm2-360m": {
+        "repo_id": "HuggingFaceTB/SmolLM2-360M-Instruct-GGUF",
+        "filename": "smollm2-360m-instruct-q4_k_m.gguf",
+        "display_name": "SmolLM2 360M (Ultra-fast Fallback)",
+        "prompt_format": "chatml",
+    },
+}
 
 # macOS settings
 FALLBACK_HOLD_HOTKEY = "Ctrl+Option+D"

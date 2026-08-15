@@ -25,9 +25,9 @@ PyObjC-framework-ApplicationServices>=10.0
 rumps>=0.4.0
 pynput>=1.7.7
 
-# ── Optional: local LLM cleanup ──────────────────────────────────────────
-# Requires a running Ollama server: https://ollama.ai
-requests>=2.31.0
+# ── Embedded local LLM cleanup (Metal GPU accelerated on macOS) ───────────
+llama-cpp-python>=0.2.90
+huggingface-hub>=0.23.0
 
 # ── Config ────────────────────────────────────────────────────────────────
 python-dotenv>=1.0.0

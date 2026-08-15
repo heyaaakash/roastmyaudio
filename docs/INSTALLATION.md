@@ -235,9 +235,8 @@ export WHISPER_MODEL=base
 # Language (en, es, fr, de, zh, ja, pt, it, ko, ru)
 export WHISPER_LANGUAGE=en
 
-# Ollama LLM server (optional)
-export OLLAMA_URL=http://localhost:11434/api/generate
-export OLLAMA_MODEL=llama3.2:1b
+# Embedded Metal LLM model (qwen2.5-0.5b, smollm2-360m)
+export LLM_MODEL=qwen2.5-0.5b
 ```
 
 Or create `config/.env`:
@@ -245,8 +244,7 @@ Or create `config/.env`:
 ```
 WHISPER_MODEL=base
 WHISPER_LANGUAGE=en
-OLLAMA_URL=http://localhost:11434/api/generate
-OLLAMA_MODEL=llama3.2:1b
+LLM_MODEL=qwen2.5-0.5b
 ```
 
 ### Settings Persistence

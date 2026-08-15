@@ -1,6 +1,7 @@
-import time
 import threading
-from AppKit import NSWorkspace, NSPasteboard, NSStringPboardType
+import time
+
+from AppKit import NSPasteboard, NSStringPboardType, NSWorkspace
 
 try:
     import Quartz
@@ -100,7 +101,7 @@ def _is_pasteable(app_name: str) -> bool:
     if not app_name:
         # Unknown app — try injection anyway
         return True
-    
+
     app_lower = app_name.lower()
     for skip_app in _SKIP_INJECTION_APPS:
         if skip_app.lower() in app_lower:
@@ -144,7 +145,7 @@ def inject(text: str, app_name: str = "") -> tuple[bool, str]:
         time.sleep(0.01)  # give clipboard time to settle
         _paste()
         time.sleep(0.03)  # local apps respond to Cmd+V almost instantly
-        
+
         _write_clipboard(original)  # restore original
         return True, "ok"
     except Exception as e:

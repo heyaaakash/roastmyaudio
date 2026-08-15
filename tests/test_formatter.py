@@ -88,6 +88,28 @@ class TestFormatTranscript:
         result = format_transcript("Hello. world is round.")
         assert "World" in result
 
+    def test_voice_command_scratch_that_replaces_preceding_clause(self):
+        result = format_transcript("I want to eat apples scratch that I want to eat oranges")
+        assert "apples" not in result
+        assert "oranges" in result
+
+    def test_voice_command_scratch_that_standalone_returns_empty(self):
+        assert format_transcript("scratch that") == ""
+        assert format_transcript("never mind") == ""
+        assert format_transcript("undo that") == ""
+
+    def test_voice_command_scratch_that_preserves_prior_sentence(self):
+        result = format_transcript("First task is complete. We need five apples scratch that six apples")
+        assert "First task is complete." in result
+        assert "five apples" not in result.lower()
+        assert "six apples" in result.lower()
+
+    def test_voice_command_delete_last_line(self):
+        result = format_transcript("line one new line line two new line delete last line new line line three")
+        assert "Line two" not in result
+        assert "Line one" in result
+        assert "Line three" in result
+
 
 # ---------------------------------------------------------------------------
 # format_transcript_strict

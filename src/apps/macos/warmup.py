@@ -20,14 +20,15 @@ for _p in (str(PROJECT_ROOT), str(CONFIG_DIR)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from src.shared.llm_cleanup import warmup as ollama_warmup  # noqa: E402
+from src.shared.llm_cleanup import warmup as llm_warmup  # noqa: E402
+from src.shared.settings import get as get_setting  # noqa: E402
 from src.shared.transcriber import get_inference_lock, get_model_by_name  # noqa: E402
 
 
 def load_models_async(on_complete: Optional[Callable] = None) -> None:
     """
     Pre-load the primary (base) and preview (tiny.en) Whisper models, plus
-    warm up the Ollama LLM. Runs in a daemon thread so it never blocks the UI.
+    warm up the embedded Metal LLM. Runs in a daemon thread so it never blocks the UI.
 
     Args:
         on_complete: Optional callback called on the thread when warmup finishes.
@@ -53,9 +54,11 @@ def load_models_async(on_complete: Optional[Callable] = None) -> None:
                 segs, _ = preview.transcribe(silence, language="en", vad_filter=False)
                 list(segs)
 
-            # 3. Ollama LLM (optional — silently ignored if not running)
-            print("Warming up Ollama LLM...")
-            ollama_warmup()
+            # 3. Embedded Local LLM (Metal GPU)
+            if get_setting("llm_enabled"):
+                llm_model = get_setting("llm_model") or "qwen2.5-0.5b"
+                print(f"Warming up embedded LLM '{llm_model}' on Metal...")
+                llm_warmup(model_key=llm_model)
 
             print("All models ready.")
         except Exception as exc:  # noqa: BLE001

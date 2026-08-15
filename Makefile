@@ -27,21 +27,20 @@ help:
 	@echo ""
 
 # ── Setup ─────────────────────────────────────────────────────────────────
-setup: $(VENV)/bin/activate
-
-$(VENV)/bin/activate:
-	@echo "→ Creating virtual environment in $(VENV)/"
-	$(PYTHON) -m venv $(VENV)
+setup:
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "→ Creating virtual environment in $(VENV)/"; \
+		$(PYTHON) -m venv $(VENV); \
+	fi
 	@echo "→ Upgrading pip..."
-	$(PIP) install --upgrade pip
+	@$(PIP) install --upgrade pip --quiet
 	@echo "→ Installing runtime dependencies..."
-	$(PIP) install -r requirements.txt
-	@echo "→ Installing dev dependencies..."
-	$(PIP) install -r requirements-dev.txt
+	@$(PIP) install -r requirements.txt
+	@if [ -f requirements-dev.txt ]; then $(PIP) install -r requirements-dev.txt; fi
 	@echo ""
 	@echo "✓ Setup complete."
 	@echo "  Run 'make run' to start the menu bar app."
-	@echo "  Run 'make download' to pre-download Whisper models."
+	@echo "  Run 'make download' to pre-download Whisper & LLM models."
 
 # ── Run applications ──────────────────────────────────────────────────────
 run: $(VENV)/bin/activate

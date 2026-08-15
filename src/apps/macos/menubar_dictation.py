@@ -1,7 +1,9 @@
 """
 RoastMyAudio — macOS Menu Bar App.
 
-Hold Fn (or Ctrl+Option+D) to record → release to transcribe and paste.
+Hold Fn (or Ctrl+Option+D) for Push-to-Talk, or use Hands-Free Toggle Mode.
+Features live sound-reactive waveform HUD, smart app + clipboard context injection,
+voice editing commands ("scratch that"), and embedded local LLM cleanup.
 """
 
 import logging
@@ -40,6 +42,7 @@ try:
         NSEvent,
         NSEventMaskFlagsChanged,
         NSEventModifierFlagFunction,
+        NSNotificationCenter,
     )
     from PyObjCTools import AppHelper
 
@@ -75,6 +78,7 @@ _old_stderr = os.dup(2)
 _devnull = os.open(os.devnull, os.O_WRONLY)
 os.dup2(_devnull, 2)
 try:
+    from config import FLASK_HOST, FLASK_PORT, SUPPORTED_LLM_MODELS
     from src.apps.macos.audio_recorder import (
         SAMPLE_RATE,
         AudioRecorder,
@@ -84,16 +88,20 @@ try:
     )
     from src.apps.macos.hud_overlay import DictationOverlay, _normalize_audio_level
     from src.apps.macos.warmup import load_models_async
+    from src.shared.context_detector import (
+        build_whisper_prompt,
+        get_app_mode,
+    )
     from src.shared.dictionary import add as dict_add
     from src.shared.dictionary import as_prompt
     from src.shared.dictionary import load as dict_load
-    from src.shared.formatter import format_transcript
+    from src.shared.formatter import format_transcript, format_transcript_strict
     from src.shared.history import load as history_load
-    from src.shared.history import save as history_save
-    from src.shared.llm_cleanup import clean
+    from src.shared.history import save_recording as history_save_recording
+    from src.shared.llm_cleanup import clean, cleanup_llm
     from src.shared.settings import load as settings_load
     from src.shared.settings import set as settings_set
-    from src.shared.text_injector import AppMonitor, _write_clipboard, inject
+    from src.shared.text_injector import AppMonitor, _save_clipboard, _write_clipboard, inject
     from src.shared.transcriber import (
         get_installed_models,
         get_preview_model_name,
@@ -150,7 +158,7 @@ SUPPORTED_LANGUAGES = {
 # ---------------------------------------------------------------------------
 class WhisperMenuBarApp(rumps.App):
     def __init__(self):
-        super().__init__("W")
+        super().__init__("🎙️")
 
         # Load persisted settings
         _settings = settings_load()
@@ -188,6 +196,10 @@ class WhisperMenuBarApp(rumps.App):
         self._selected_language_label: str = _settings.get("language_label", "English")
         self._selected_language_code: Optional[str] = _settings.get("language", "en")
         self._llm_enabled: bool = _settings.get("llm_enabled", True)
+        self._llm_model: str = _settings.get("llm_model", "qwen2.5-0.5b")
+        self._dictation_mode: str = _settings.get("dictation_mode", "push_to_talk")
+        self._context_awareness: bool = _settings.get("context_awareness", True)
+        self._voice_commands: bool = _settings.get("voice_commands", True)
 
         saved_device = _settings.get("device_id")
         self._selected_input_device: Optional[int] = (
@@ -206,6 +218,7 @@ class WhisperMenuBarApp(rumps.App):
         self._status_item = rumps.MenuItem("Status: Idle")
         self._status_item.set_callback(None)
 
+        self._dashboard_item = rumps.MenuItem("Open Flow Dashboard", callback=self._on_open_dashboard)
         self._home_item = rumps.MenuItem("Home", callback=self._on_open_home)
         self._updates_item = rumps.MenuItem("Check for updates...", callback=self._on_check_updates)
 
@@ -217,20 +230,41 @@ class WhisperMenuBarApp(rumps.App):
         self._dictionary_item = rumps.MenuItem("Personal Dictionary", callback=self._on_show_dictionary)
         self._history_item = rumps.MenuItem("Recent Dictations", callback=self._on_show_history)
 
-        hotkey_hint = (
-            "Push-to-talk: hold Fn"
-            if self._fn_supported
-            else f"Push-to-talk: hold {FALLBACK_HOLD_HOTKEY}"
-        )
-        self._hotkey_hint_item = rumps.MenuItem(hotkey_hint)
+        self._hotkey_hint_item = rumps.MenuItem(self._get_hotkey_hint())
         self._hotkey_hint_item.set_callback(None)
 
         self._copy_last_item = rumps.MenuItem("Copy Last Processed", callback=self._on_copy_last)
         self._test_overlay_item = rumps.MenuItem("Test Overlay (2s)", callback=self._on_test_overlay)
 
-        # LLM toggle
-        llm_label = "LLM Cleanup: ON" if self._llm_enabled else "LLM Cleanup: OFF"
-        self._llm_toggle_item = rumps.MenuItem(llm_label, callback=self._on_toggle_llm)
+        # Dictation Mode Submenu (Push-to-Talk vs Hands-Free Toggle)
+        self._mode_menu = rumps.MenuItem("Dictation Mode")
+        self._mode_ptt_item = rumps.MenuItem("Push-to-Talk (Hold Key)", callback=self._on_select_mode_ptt)
+        self._mode_ptt_item.state = int(self._dictation_mode == "push_to_talk")
+        self._mode_hands_free_item = rumps.MenuItem("Hands-Free Toggle (Tap Key)", callback=self._on_select_mode_hands_free)
+        self._mode_hands_free_item.state = int(self._dictation_mode == "hands_free")
+        self._mode_menu.add(self._mode_ptt_item)
+        self._mode_menu.add(self._mode_hands_free_item)
+
+        # Smart Context & Voice Commands Toggles
+        self._context_toggle_item = rumps.MenuItem("Smart Context Injection", callback=self._on_toggle_context)
+        self._context_toggle_item.state = int(self._context_awareness)
+
+        self._voice_cmd_toggle_item = rumps.MenuItem("Voice Editing Commands", callback=self._on_toggle_voice_commands)
+        self._voice_cmd_toggle_item.state = int(self._voice_commands)
+
+        # AI Cleanup submenu (Metal GPU accelerated)
+        self._llm_menu = rumps.MenuItem("AI Cleanup (Metal)")
+        self._llm_toggle_item = rumps.MenuItem("Enable AI Cleanup", callback=self._on_toggle_llm)
+        self._llm_toggle_item.state = int(self._llm_enabled)
+        self._llm_menu.add(self._llm_toggle_item)
+        self._llm_menu.add(None)
+
+        self._llm_model_items: dict[str, rumps.MenuItem] = {}
+        for key, info in SUPPORTED_LLM_MODELS.items():
+            item = rumps.MenuItem(info["display_name"], callback=self._on_select_llm_model)
+            item.state = int(key == self._llm_model)
+            self._llm_menu.add(item)
+            self._llm_model_items[key] = item
 
         # Microphone submenu
         self._mic_menu = rumps.MenuItem("Microphone")
@@ -256,6 +290,7 @@ class WhisperMenuBarApp(rumps.App):
         self._quit_item = rumps.MenuItem("Quit RoastMyAudio", callback=self._on_quit)
 
         self.menu = [
+            self._dashboard_item,
             self._home_item,
             self._updates_item,
             None,
@@ -263,11 +298,14 @@ class WhisperMenuBarApp(rumps.App):
             self._last_preview_item,
             None,
             self._hotkey_hint_item,
+            self._mode_menu,
+            self._context_toggle_item,
+            self._voice_cmd_toggle_item,
             None,
             self._mic_menu,
             self._language_menu,
             self._model_menu,
-            self._llm_toggle_item,
+            self._llm_menu,
             None,
             self._dictionary_item,
             self._history_item,
@@ -302,9 +340,29 @@ class WhisperMenuBarApp(rumps.App):
 
         self._check_and_prompt_permissions()
         self._app_monitor.start()
+        self._start_dashboard_server()
 
         # Background warmup
         load_models_async(on_complete=self._on_models_ready)
+
+    def _start_dashboard_server(self):
+        """Start embedded Flow Dashboard Flask server in background daemon thread."""
+        def _run():
+            try:
+                import logging
+                logging.getLogger("werkzeug").setLevel(logging.ERROR)
+                from src.apps.web.app import app as web_app
+                web_app.run(host=FLASK_HOST, port=FLASK_PORT, debug=False, use_reloader=False)
+            except Exception as exc:
+                print(f"Dashboard background server notice: {exc}")
+
+        t = threading.Thread(target=_run, daemon=True, name="FlowDashboardServer")
+        t.start()
+
+    def _get_hotkey_hint(self) -> str:
+        if self._dictation_mode == "hands_free":
+            return "Hands-Free: tap Fn (or Ctrl+Opt+D) to start/stop"
+        return "Push-to-talk: hold Fn (or Ctrl+Opt+D)"
 
     # ====================================================================
     # Menu population helpers
@@ -349,8 +407,18 @@ class WhisperMenuBarApp(rumps.App):
     def _show_overlay(self):
         if not self._overlay:
             return
-        AppHelper.callAfter(self._overlay.show)
-        AppHelper.callAfter(self._overlay.set_title, f"Dictating · {self._selected_model}")
+        app_name = self._app_monitor.get()
+        mode = get_app_mode(app_name).capitalize() if self._context_awareness else ""
+        if self._dictation_mode == "hands_free":
+            badge = f"Hands-Free · {mode}" if mode else "Hands-Free"
+        else:
+            badge = mode or "PTT"
+
+        def _do_show():
+            self._overlay.show()
+            self._overlay.set_title(f"Dictating · {self._selected_model}", badge)
+
+        AppHelper.callAfter(_do_show)
 
     def _hide_overlay(self):
         if not self._overlay:
@@ -435,29 +503,44 @@ class WhisperMenuBarApp(rumps.App):
     def _on_key_press(self, key):
         self._pressed_keys.add(self._key_identifier(key))
         with self._lock:
+            prev_fallback = self._fallback_down
             self._fallback_down = self._is_fallback_combo_active()
-            self._update_ptt_state_locked()
+            if self._dictation_mode == "hands_free":
+                if self._fallback_down and not prev_fallback:
+                    self._toggle_recording_locked()
+            else:
+                self._update_ptt_state_locked()
 
     def _on_key_release(self, key):
-        kid = self._key_identifier(key)
-        self._pressed_keys.discard(kid)
+        self._pressed_keys.discard(self._key_identifier(key))
         with self._lock:
             self._fallback_down = self._is_fallback_combo_active()
-            self._update_ptt_state_locked()
+            if self._dictation_mode == "push_to_talk":
+                self._update_ptt_state_locked()
 
     def _on_flags_changed(self, event):
-        try:
-            fn_down = bool(event.modifierFlags() & NSEventModifierFlagFunction)
-        except Exception:
+        if not self._fn_supported:
             return event
+        flags = int(event.modifierFlags())
+        fn_down = bool(flags & NSEventModifierFlagFunction)
         with self._lock:
-            if self._fn_down != fn_down:
+            if self._dictation_mode == "hands_free":
+                if fn_down and not self._fn_down:
+                    self._toggle_recording_locked()
                 self._fn_down = fn_down
-                self._update_ptt_state_locked()
+            else:
+                if self._fn_down != fn_down:
+                    self._fn_down = fn_down
+                    self._update_ptt_state_locked()
         return event
 
     def _read_hid_fn_state(self) -> Optional[bool]:
-        if any(v is None for v in [CGEventSourceFlagsState, kCGEventSourceStateHIDSystemState, kCGEventFlagMaskSecondaryFn]):
+        if (
+            not self._fn_supported
+            or CGEventSourceFlagsState is None
+            or kCGEventSourceStateHIDSystemState is None
+            or kCGEventFlagMaskSecondaryFn is None
+        ):
             return None
         try:
             flags = CGEventSourceFlagsState(kCGEventSourceStateHIDSystemState)
@@ -465,26 +548,28 @@ class WhisperMenuBarApp(rumps.App):
         except Exception:
             return None
 
-    # ====================================================================
-    # PTT state machine
-    # ====================================================================
     def _update_ptt_state_locked(self):
         should_be_active = self._fn_down or self._fallback_down
-        if should_be_active:
-            self._start_ptt_if_needed()
-        else:
-            self._stop_ptt_if_needed()
-
-    def _start_ptt_if_needed(self):
-        if self._ptt_active:
+        if should_be_active == self._ptt_active:
             return
-        self._ptt_active = True
-        self._ptt_start_time = time.time()
+        self._ptt_active = should_be_active
+        if self._ptt_active:
+            self._ptt_start_time = time.time()
+            if not self._recording:
+                self._start_recording_locked()
+        else:
+            self._ptt_start_time = None
+            if self._recording:
+                self._stop_recording_locked()
+
+    def _toggle_recording_locked(self):
         if not self._recording:
             self._start_recording_locked()
+        else:
+            self._stop_recording_locked()
 
     def _stop_ptt_if_needed(self):
-        if not self._ptt_active:
+        if not self._ptt_active and not self._recording:
             return
         self._ptt_active = False
         self._ptt_start_time = None
@@ -506,32 +591,20 @@ class WhisperMenuBarApp(rumps.App):
     def _ptt_watchdog_worker(self):
         while not self._ptt_watchdog_stop_event.wait(PTT_STATE_POLL_SEC):
             with self._lock:
-                # Auto-stop if PTT held too long (prevents getting stuck)
+                if self._dictation_mode == "hands_free":
+                    continue
                 if self._ptt_active and self._ptt_start_time:
                     if time.time() - self._ptt_start_time > PTT_MAX_HOLD_SEC:
                         print(f"PTT timeout after {PTT_MAX_HOLD_SEC}s — force-stopping")
                         self._stop_ptt_if_needed()
                         continue
-                if not self._fn_supported:
-                    continue
-
-            hid_fn_down = self._read_hid_fn_state()
-            with self._lock:
-                if hid_fn_down is None:
-                    if self._fn_down and self._ptt_active:
-                        self._fn_down = False
-                        self._update_ptt_state_locked()
-                    continue
-                if self._fn_down != hid_fn_down:
-                    self._fn_down = hid_fn_down
-                    self._update_ptt_state_locked()
 
     # ====================================================================
     # Recording lifecycle
     # ====================================================================
     def _audio_callback(self, chunk: np.ndarray):
         """Called by AudioRecorder for each incoming audio chunk."""
-        self._audio_chunks.append(chunk.reshape(-1, 1).copy())  # keep (N,1) shape for concatenation
+        self._audio_chunks.append(chunk.reshape(-1, 1).copy())
         with self._audio_buffer_lock:
             self._fast_chunk_queue.append(chunk.copy())
         if self._overlay is not None and chunk.size and self._recording:
@@ -543,7 +616,7 @@ class WhisperMenuBarApp(rumps.App):
         try:
             self._show_overlay()
             self._set_status("Recording")
-            self.title = "R"
+            self.title = "🔴"
 
             self._audio_chunks = []
             with self._audio_buffer_lock:
@@ -558,7 +631,7 @@ class WhisperMenuBarApp(rumps.App):
         except Exception as exc:
             self._recording = False
             self._audio_recorder = None
-            self.title = "W"
+            self.title = "🎙️"
             self._set_status(f"Mic error: {exc}")
             self._hide_overlay()
 
@@ -572,7 +645,7 @@ class WhisperMenuBarApp(rumps.App):
             self._audio_recorder = None
 
         self._recording = False
-        self.title = "W"
+        self.title = "🎙️"
         self._hide_overlay()
 
         if raw_audio is None or raw_audio.size == 0:
@@ -580,7 +653,7 @@ class WhisperMenuBarApp(rumps.App):
                 raw_audio = np.concatenate(self._audio_chunks, axis=0).reshape(-1)
             self._audio_chunks = []
 
-        if raw_audio is None or raw_audio.size == 0:
+        if raw_audio is None or raw_audio.size < int(SAMPLE_RATE * 0.25):
             self._set_status("No audio captured")
             return
 
@@ -597,13 +670,6 @@ class WhisperMenuBarApp(rumps.App):
             args=(raw_audio.copy(), self._selected_model, fast_model, fast_segments, fast_processed),
             daemon=True,
         ).start()
-
-    def _toggle_recording(self):
-        with self._lock:
-            if not self._recording:
-                self._start_recording_locked()
-            else:
-                self._stop_recording_locked()
 
     # ====================================================================
     # Live preview
@@ -725,8 +791,19 @@ class WhisperMenuBarApp(rumps.App):
     # Transcription & text injection
     # ====================================================================
     def _transcribe(self, audio: np.ndarray, model_name: str) -> str:
-        """Transcribe audio using the shared transcription engine."""
-        initial_prompt = as_prompt() or None
+        """Transcribe audio with optional smart context injection."""
+        app_name = self._app_monitor.get()
+        if self._context_awareness:
+            clipboard_text = _save_clipboard()
+            custom_words = dict_load()
+            initial_prompt = build_whisper_prompt(
+                app_name=app_name,
+                clipboard_text=clipboard_text,
+                custom_words=custom_words,
+            ) or None
+        else:
+            initial_prompt = as_prompt() or None
+
         return _transcribe_audio(
             normalize_audio(audio),
             model_name=model_name,
@@ -744,39 +821,46 @@ class WhisperMenuBarApp(rumps.App):
         fast_processed_samples: int,
     ):
         raw_text = ""
+        cleaned_text = ""
+        formatted = ""
+        llm_ms = 0
+        app_name = self._app_monitor.get()
+        duration_sec = audio.size / SAMPLE_RATE if SAMPLE_RATE > 0 else 0
+
         try:
-            duration_sec = audio.size / SAMPLE_RATE if SAMPLE_RATE > 0 else 0
+            # Full-context transcription on complete audio array
+            raw_text = self._transcribe(audio, model_name)
 
-            # Short utterance: skip fast-commit path, use full model directly
-            if duration_sec <= SHORT_UTTERANCE_FAST_PATH_SEC:
-                raw_text = self._transcribe(audio, model_name)
-
-            if fast_segments:
-                raw_text = " ".join(seg for seg in fast_segments if seg).strip()
-                safe_processed = min(max(fast_processed_samples, 0), audio.size)
-                remaining = audio[safe_processed:]
-                if remaining.size >= int(SAMPLE_RATE * FAST_COMMIT_MIN_TAIL_SEC):
-                    tail = self._transcribe(remaining, model_name)
-                    if tail:
-                        raw_text = f"{raw_text} {tail}".strip()
-
-            if not raw_text:
-                raw_text = self._transcribe(audio, model_name)
-
-            # LLM cleanup (optional, skipped for very short utterances)
-            app_name = self._app_monitor.get()
-            if self._llm_enabled and len(raw_text.split()) >= 3:
-                cleaned_text, llm_ms = clean(raw_text, app_name)
-                print(f"LLM cleanup: {llm_ms}ms")
+            # LLM cleanup (context conditioned)
+            if self._llm_enabled and raw_text and len(raw_text.split()) >= 2:
+                cleaned_text, llm_ms = clean(raw_text, app_name, model_key=self._llm_model)
+                print(f"LLM cleanup ({self._llm_model}): {llm_ms}ms")
             else:
                 cleaned_text, llm_ms = raw_text, 0
 
             print(f"Raw:     {raw_text}")
             print(f"Cleaned: {cleaned_text}")
 
-            formatted = format_transcript(cleaned_text)
+            if self._voice_commands:
+                formatted = format_transcript(cleaned_text)
+            else:
+                formatted = format_transcript_strict(cleaned_text)
 
-            if not formatted or len(formatted.strip()) < 4:
+            # Always save audio recording into dashboard history
+            history_save_recording(
+                audio=audio,
+                raw=raw_text,
+                cleaned=cleaned_text,
+                formatted=formatted or raw_text,
+                app=app_name,
+                latency_ms=llm_ms,
+                model_used=model_name,
+                llm_model=self._llm_model,
+                duration_sec=duration_sec,
+                status="completed" if (formatted and len(formatted.strip()) >= 2) else "failed",
+            )
+
+            if not formatted or len(formatted.strip()) < 2:
                 AppHelper.callAfter(self._set_status, "No speech recognized")
                 return
 
@@ -784,20 +868,33 @@ class WhisperMenuBarApp(rumps.App):
             RUNTIME_LAST_TEXT_PATH.write_text(formatted, encoding="utf-8")
             AppHelper.callAfter(self._set_last_preview, formatted)
 
-            app_name = self._app_monitor.get()
             success, reason = inject(formatted, app_name)
 
             if success:
-                mode = "chunked" if fast_segments else "full"
-                AppHelper.callAfter(self._set_status, f"Pasted ({model_name} / {mode})")
+                AppHelper.callAfter(self._set_status, f"Pasted ({model_name})")
                 rumps.notification("RoastMyAudio", "Transcription inserted", formatted[:120])
             else:
                 AppHelper.callAfter(self._show_injection_failure, formatted, reason)
 
-            history_save(raw_text, formatted, app_name, llm_ms)
-
         except Exception as exc:
+            print(f"Finalize error: {exc}")
             self._set_status(f"Error: {exc}")
+            # Fallback save on error
+            try:
+                history_save_recording(
+                    audio=audio,
+                    raw=raw_text,
+                    cleaned=cleaned_text,
+                    formatted=formatted or raw_text or str(exc),
+                    app=app_name,
+                    latency_ms=llm_ms,
+                    model_used=model_name,
+                    llm_model=self._llm_model,
+                    duration_sec=duration_sec,
+                    status="failed",
+                )
+            except Exception:
+                pass
 
     def _show_injection_failure(self, text: str, reason: str):
         print(f"Injection failed: {reason}")
@@ -818,8 +915,11 @@ class WhisperMenuBarApp(rumps.App):
     # Menu callbacks
     # ====================================================================
     def _on_models_ready(self):
-        self.title = "W"
+        self.title = "🎙️"
         rumps.notification("RoastMyAudio", "", "Models ready", sound=False)
+
+    def _on_open_dashboard(self, _):
+        webbrowser.open(f"http://{FLASK_HOST}:{FLASK_PORT}")
 
     def _on_open_home(self, _):
         webbrowser.open(HOME_URL)
@@ -839,7 +939,9 @@ class WhisperMenuBarApp(rumps.App):
 
     def _on_test_overlay(self, _):
         self._show_overlay()
-        threading.Timer(2.0, self._hide_overlay).start()
+        AppHelper.callAfter(self._overlay.set_preview_text, "Testing 14-bar crazy wave HUD...")
+        AppHelper.callAfter(self._overlay.set_audio_level, 0.85)
+        threading.Timer(3.0, self._hide_overlay).start()
 
     def _on_copy_last(self, _):
         if not self._last_processed_text:
@@ -865,12 +967,52 @@ class WhisperMenuBarApp(rumps.App):
         except Exception as exc:
             self._set_status(f"Paste failed: {exc}")
 
-    def _on_toggle_llm(self, _):
+    def _on_select_mode_ptt(self, _):
+        self._dictation_mode = "push_to_talk"
+        self._mode_ptt_item.state = 1
+        self._mode_hands_free_item.state = 0
+        settings_set("dictation_mode", "push_to_talk")
+        self._hotkey_hint_item.title = self._get_hotkey_hint()
+        self._set_status("Mode: Push-to-Talk")
+
+    def _on_select_mode_hands_free(self, _):
+        self._dictation_mode = "hands_free"
+        self._mode_ptt_item.state = 0
+        self._mode_hands_free_item.state = 1
+        settings_set("dictation_mode", "hands_free")
+        self._hotkey_hint_item.title = self._get_hotkey_hint()
+        self._set_status("Mode: Hands-Free Toggle")
+
+    def _on_toggle_context(self, sender):
+        self._context_awareness = not self._context_awareness
+        sender.state = int(self._context_awareness)
+        settings_set("context_awareness", self._context_awareness)
+        self._set_status(f"Smart Context: {'ON' if self._context_awareness else 'OFF'}")
+
+    def _on_toggle_voice_commands(self, sender):
+        self._voice_commands = not self._voice_commands
+        sender.state = int(self._voice_commands)
+        settings_set("voice_commands", self._voice_commands)
+        self._set_status(f"Voice Commands: {'ON' if self._voice_commands else 'OFF'}")
+
+    def _on_toggle_llm(self, sender):
         self._llm_enabled = not self._llm_enabled
-        label = "LLM Cleanup: ON" if self._llm_enabled else "LLM Cleanup: OFF"
-        self._llm_toggle_item.title = label
+        sender.state = int(self._llm_enabled)
         settings_set("llm_enabled", self._llm_enabled)
-        self._set_status(label)
+        self._set_status(f"AI Cleanup: {'ON' if self._llm_enabled else 'OFF'}")
+
+    def _on_select_llm_model(self, sender):
+        selected_key = None
+        for key, item in self._llm_model_items.items():
+            if item.title == sender.title:
+                selected_key = key
+                item.state = 1
+            else:
+                item.state = 0
+        if selected_key:
+            self._llm_model = selected_key
+            settings_set("llm_model", selected_key)
+            self._set_status(f"AI Model: {SUPPORTED_LLM_MODELS[selected_key]['display_name']}")
 
     def _on_select_microphone(self, sender):
         entry = self._mic_items.get(sender.title)
@@ -943,6 +1085,7 @@ class WhisperMenuBarApp(rumps.App):
         self._hide_overlay()
         self._hotkey_listener.stop()
         self._app_monitor.stop()
+        cleanup_llm()
         rumps.quit_application()
 
 
@@ -950,6 +1093,29 @@ class WhisperMenuBarApp(rumps.App):
 # Entry point
 # ---------------------------------------------------------------------------
 def main():
+    import signal
+
+    def _cleanup_and_exit(sig=None, frame=None):
+        cleanup_llm()
+        os._exit(0)
+
+    try:
+        signal.signal(signal.SIGINT, _cleanup_and_exit)
+        signal.signal(signal.SIGTERM, _cleanup_and_exit)
+    except Exception:
+        pass
+
+    if APPKIT_AVAILABLE:
+        try:
+            NSNotificationCenter.defaultCenter().addObserverForName_object_queue_usingBlock_(
+                "NSApplicationWillTerminateNotification",
+                None,
+                None,
+                lambda notif: cleanup_llm(),
+            )
+        except Exception:
+            pass
+
     app = WhisperMenuBarApp()
     if RUNTIME_LAST_TEXT_PATH.exists():
         try:
@@ -957,7 +1123,10 @@ def main():
             app._set_last_preview(app._last_processed_text)
         except Exception:
             pass
-    app.run()
+    try:
+        app.run()
+    finally:
+        cleanup_llm()
 
 
 if __name__ == "__main__":
