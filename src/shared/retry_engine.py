@@ -6,7 +6,6 @@ or re-running LLM cleanups and style transforms.
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 # Add config and shared directory to path
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
@@ -25,7 +24,7 @@ from src.shared.transcriber import get_inference_lock, transcribe  # noqa: E402
 def retranscribe_recording(
     recording_id: str,
     model_name: str = "base",
-    language: Optional[str] = "en",
+    language: str | None = "en",
     run_llm: bool = True,
     llm_model: str = "qwen2.5-0.5b",
 ) -> dict:
@@ -63,14 +62,28 @@ def retranscribe_recording(
     )
     raw_text = filter_hallucinations(raw_text)
 
-    # LLM cleanup
-    app_name = rec.get("app", "General")
-    if run_llm and len(raw_text.split()) >= 3:
-        cleaned_text, latency_ms = clean(raw_text, app_name=app_name, model_key=llm_model)
-    else:
-        cleaned_text, latency_ms = raw_text, 0
+    from src.shared.formatter import format_transcript_strict
+    from src.shared.personalization import apply, style_for
 
-    formatted = format_transcript(cleaned_text)
+    app_name = rec.get("app", "General")
+    corrected, snippet = apply(raw_text)
+    style = style_for(app_name)
+    if run_llm and not snippet and style != "verbatim" and len(corrected.split()) >= 3:
+        cleaned_text, latency_ms = clean(
+            corrected,
+            app_name=app_name,
+            model_key=llm_model,
+            transform="clean" if style == "default" else style,
+        )
+    else:
+        cleaned_text, latency_ms = corrected, 0
+    formatted = (
+        cleaned_text
+        if snippet
+        else format_transcript_strict(cleaned_text)
+        if style == "verbatim"
+        else format_transcript(cleaned_text)
+    )
 
     words = [w for w in formatted.split() if w.strip()]
     dur = rec.get("duration_sec", 0.0)
@@ -111,10 +124,14 @@ def retry_cleanup(
     app_name = rec.get("app", "General")
 
     if transform_style == "clean":
-        cleaned_text, latency_ms = clean(raw_text, app_name=app_name, model_key=model_key, transform="clean")
+        cleaned_text, latency_ms = clean(
+            raw_text, app_name=app_name, model_key=model_key, transform="clean"
+        )
         formatted = format_transcript(cleaned_text)
     else:
-        cleaned_text, latency_ms = transform_text(raw_text, transform_type=transform_style, app_name=app_name, model_key=model_key)
+        cleaned_text, latency_ms = transform_text(
+            raw_text, transform_type=transform_style, app_name=app_name, model_key=model_key
+        )
         formatted = cleaned_text
 
     words = [w for w in formatted.split() if w.strip()]
@@ -132,6 +149,7 @@ def retry_cleanup(
         "word_count": len(words),
         "wpm": wpm,
         "transforms": transforms,
+        "cleanup_applied": latency_ms > 0,
         "status": "completed",
     }
 

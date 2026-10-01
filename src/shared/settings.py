@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from src.shared.storage import synchronized, write_json
+
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 if str(CONFIG_DIR) not in sys.path:
     sys.path.insert(0, str(CONFIG_DIR))
@@ -23,17 +25,19 @@ DEFAULTS: dict[str, Any] = {
     "model": "base",
     "language": "en",
     "language_label": "English",
+    "shortcuts_enabled": True,
     "hotkey": "fn",                  # "fn" or "ctrl_option_d"
     "dictation_mode": "push_to_talk",  # "push_to_talk" or "hands_free"
-    "context_awareness": True,        # Smart App + Clipboard context injection
+    "context_awareness": False,        # Smart App + Clipboard context injection
     "voice_commands": True,           # Voice editing commands ("scratch that", etc.)
-    "haptics_enabled": True,          # macOS trackpad haptic feedback
+    "haptics_enabled": False,          # macOS trackpad haptic feedback
     "llm_enabled": True,
     "llm_model": "qwen2.5-0.5b",
     "device_id": None,               # None = system default microphone
 }
 
 
+@synchronized(lambda: SETTINGS_PATH)
 def load() -> dict[str, Any]:
     """Load settings from disk, merging with defaults for missing keys."""
     if not SETTINGS_PATH.exists():
@@ -42,16 +46,19 @@ def load() -> dict[str, Any]:
         data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
         merged = dict(DEFAULTS)
         merged.update({k: v for k, v in data.items() if k in DEFAULTS})
+        if merged.get("language") is None:
+            merged["language"] = "auto"
         return merged
     except Exception:
         return dict(DEFAULTS)
 
 
+@synchronized(lambda: SETTINGS_PATH)
 def save(settings: dict[str, Any]) -> None:
     """Persist settings to disk. Only known keys are written."""
     SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     clean = {k: settings[k] for k in DEFAULTS if k in settings}
-    SETTINGS_PATH.write_text(json.dumps(clean, indent=2), encoding="utf-8")
+    write_json(SETTINGS_PATH, clean)
 
 
 def get(key: str) -> Any:
@@ -59,6 +66,7 @@ def get(key: str) -> Any:
     return load().get(key, DEFAULTS.get(key))
 
 
+@synchronized(lambda: SETTINGS_PATH)
 def set(key: str, value: Any) -> None:
     """Update and persist a single setting."""
     if key not in DEFAULTS:

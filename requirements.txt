@@ -1,39 +1,11 @@
-# RoastMyAudio — Python dependencies
-# Install with: pip install -r requirements.txt
-
-# ── Core transcription ────────────────────────────────────────────────────
-# faster-whisper is 4-8x faster than openai-whisper with int8 quantization
-faster-whisper>=1.0.0
-
-# ── ML backend ───────────────────────────────────────────────────────────
-torch>=2.0.0
-numpy>=1.24.0
-
-# ── Audio capture & processing ───────────────────────────────────────────
-sounddevice>=0.5.0
-scipy>=1.11.0
-
-# ── Web framework ─────────────────────────────────────────────────────────
-Flask>=2.3.0
-Flask-CORS>=4.0.0
-
-# ── macOS integration ────────────────────────────────────────────────────
-PyObjC-core>=10.0
-PyObjC-framework-Cocoa>=10.0
-PyObjC-framework-Quartz>=10.0
-PyObjC-framework-ApplicationServices>=10.0
-rumps>=0.4.0
-pynput>=1.7.7
-
-# ── Embedded local LLM cleanup (Metal GPU accelerated on macOS) ───────────
-llama-cpp-python>=0.2.90
-huggingface-hub>=0.23.0
-
-# ── Config ────────────────────────────────────────────────────────────────
-python-dotenv>=1.0.0
-
-# ── Dev tools (install via: pip install -r requirements-dev.txt) ──────────
-# Listed here for reference only; not required for running the app.
-# ruff>=0.4.0
-# pytest>=8.0.0
-# pytest-mock>=3.12.0
+# Core web + shared engine. Native macOS and AI cleanup are optional extras.
+faster-whisper>=1.1,<2
+# faster-whisper 1.2.x calls metadata_errors, removed by PyAV 19.
+av>=11,<19
+filelock>=3.10,<5
+numpy>=1.24,<3
+scipy>=1.11,<2
+Flask>=3.0,<4
+sounddevice>=0.5,<1
+huggingface-hub>=0.23,<2
+python-dotenv>=1.0,<2

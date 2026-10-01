@@ -1,23 +1,25 @@
 """
 Project configuration module.
 Centralizes all paths and settings for the Whisper project.
-All cache, models, and data are stored locally within the project.
+Desktop storage is stable across installations; web development stays project-local.
 """
 
 import os
+import sys
 from pathlib import Path
 
-# Project root is two directories up from this config file
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-# Local cache directories (all within the project)
-CACHE_DIR = PROJECT_ROOT / "cache"
+# Frozen resources are read-only; user storage always lives outside the bundle.
+PROJECT_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+DESKTOP_MODE = os.environ.get("RMA_DESKTOP") == "1"
+DATA_DIR = Path(os.environ.get("RMA_DATA_HOME", str(
+    Path.home() / "Library/Application Support/RoastMyAudio" if DESKTOP_MODE else PROJECT_ROOT / "data"
+))).expanduser()
+CACHE_DIR = Path(os.environ.get("RMA_CACHE_HOME", str(
+    Path.home() / "Library/Caches/RoastMyAudio" if DESKTOP_MODE else PROJECT_ROOT / "cache"
+))).expanduser()
 MODELS_CACHE_DIR = CACHE_DIR / "models"
-HUGGINGFACE_CACHE_DIR = CACHE_DIR / "cache"
+HUGGINGFACE_CACHE_DIR = CACHE_DIR / "huggingface"
 LLM_CACHE_DIR = CACHE_DIR / "llm"
-
-# Data directories
-DATA_DIR = PROJECT_ROOT / "data"
 TEMP_UPLOADS_DIR = DATA_DIR / "temp_uploads"
 RUNTIME_DIR = DATA_DIR / "runtime"
 RECORDINGS_DIR = DATA_DIR / "recordings"
@@ -46,7 +48,7 @@ LAST_RECORDING_PATH = RUNTIME_DIR / "last_recording.wav"
 LAST_PROCESSED_PATH = RUNTIME_DIR / "last_processed.txt"
 
 # Application settings
-DEFAULT_MODEL = "base"
+DEFAULT_MODEL = os.environ.get("WHISPER_MODEL", "base")
 SAMPLE_RATE = 16000
 CHANNELS = 1
 
@@ -84,14 +86,14 @@ AUDIO_NORM_TARGET_RMS = 0.15
 
 # Web app settings
 FLASK_HOST = "127.0.0.1"
-FLASK_PORT = 5000
+FLASK_PORT = int(os.environ.get("FLASK_PORT", "5000"))
 
 # Links
-HOME_URL = "https://github.com/openai/whisper"
-UPDATES_URL = "https://github.com/openai/whisper/releases"
-HELP_CENTER_URL = "https://github.com/openai/whisper#readme"
-SUPPORT_URL = "https://github.com/openai/whisper/discussions"
-FEEDBACK_URL = "https://github.com/openai/whisper/issues"
+HOME_URL = "https://github.com/heyaaakash/roastmyaudio"
+UPDATES_URL = "https://github.com/heyaaakash/roastmyaudio/releases"
+HELP_CENTER_URL = "https://github.com/heyaaakash/roastmyaudio/blob/main/docs/INSTALLATION.md"
+SUPPORT_URL = "https://github.com/heyaaakash/roastmyaudio/issues"
+FEEDBACK_URL = "https://github.com/heyaaakash/roastmyaudio/issues"
 
 def print_config():
     """Print current configuration for debugging."""

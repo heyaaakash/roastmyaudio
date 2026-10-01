@@ -1,20 +1,20 @@
 [build-system]
 requires = ["setuptools>=68"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "roastmyaudio"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Open-source, fully local speech-to-text for macOS menu bar and web browser"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "RoastMyAudio Contributors", email = ""}
+    {name = "Aakash"}
 ]
 maintainers = [
-    {name = "RoastMyAudio Contributors", email = ""}
+    {name = "Aakash"}
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = [
     "whisper",
     "speech-to-text",
@@ -40,8 +40,7 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
@@ -49,37 +48,48 @@ classifiers = [
 ]
 
 dependencies = [
-    "faster-whisper>=1.0.0",
-    "torch>=2.0.0",
-    "numpy>=1.24.0",
-    "sounddevice>=0.5.0",
-    "scipy>=1.11.0",
-    "Flask>=2.3.0",
-    "Flask-CORS>=4.0.0",
-    "PyObjC-core>=10.0",
-    "PyObjC-framework-Cocoa>=10.0",
-    "PyObjC-framework-Quartz>=10.0",
-    "PyObjC-framework-ApplicationServices>=10.0",
-    "rumps>=0.4.0",
-    "pynput>=1.7.7",
-    "llama-cpp-python>=0.2.90",
-    "huggingface-hub>=0.23.0",
-    "python-dotenv>=1.0.0",
+    "faster-whisper>=1.1,<2",
+    "av>=11,<19",
+    "filelock>=3.10,<5",
+    "numpy>=1.24,<3",
+    "scipy>=1.11,<2",
+    "Flask>=3.0,<4",
+    "sounddevice>=0.5,<1",
+    "huggingface-hub>=0.23,<2",
+    "python-dotenv>=1.0,<2",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "ruff>=0.4.0",
-    "pytest>=8.0.0",
-    "pytest-mock>=3.12.0",
+macos = [
+    "PyObjC-core>=10; sys_platform == 'darwin'",
+    "PyObjC-framework-Cocoa>=10; sys_platform == 'darwin'",
+    "PyObjC-framework-Quartz>=10; sys_platform == 'darwin'",
+    "PyObjC-framework-ApplicationServices>=10; sys_platform == 'darwin'",
+    "PyObjC-framework-AVFoundation>=10; sys_platform == 'darwin'",
+    "PyObjC-framework-ServiceManagement>=10; sys_platform == 'darwin'",
+    "PyObjC-framework-WebKit>=10; sys_platform == 'darwin'",
+    "rumps>=0.4; sys_platform == 'darwin'",
+    "pynput>=1.7.7; sys_platform == 'darwin'",
 ]
+bundle = ["pyinstaller>=6.17,<7"]
+cleanup = ["llama-cpp-python>=0.2.90,<1"]
+dev = ["ruff>=0.4", "pytest>=8", "pytest-mock>=3.12", "build>=1", "setuptools>=68", "wheel"]
+
+[tool.setuptools]
+packages = {find = {include = ["src*", "config*"]}}
+
+[tool.setuptools.dynamic]
+version = {file = ["VERSION"]}
+
+[tool.setuptools.package-data]
+"src.apps.web" = ["templates/*.html", "static/*.css", "static/*.js", "static/*.svg"]
 
 [project.urls]
-Homepage = "https://github.com/roastmyaudio/roastmyaudio"
-Repository = "https://github.com/roastmyaudio/roastmyaudio.git"
-Documentation = "https://github.com/roastmyaudio/roastmyaudio/tree/main/docs"
-Issues = "https://github.com/roastmyaudio/roastmyaudio/issues"
-Changelog = "https://github.com/roastmyaudio/roastmyaudio/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/heyaaakash/roastmyaudio"
+Repository = "https://github.com/heyaaakash/roastmyaudio.git"
+Documentation = "https://github.com/heyaaakash/roastmyaudio/tree/main/docs"
+Issues = "https://github.com/heyaaakash/roastmyaudio/issues"
+Changelog = "https://github.com/heyaaakash/roastmyaudio/blob/main/CHANGELOG.md"
 
 # ── Ruff linter configuration ─────────────────────────────────────────────
 [tool.ruff]

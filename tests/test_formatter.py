@@ -38,6 +38,14 @@ class TestFilterHallucinations:
         filler_count = sum(1 for w in result.lower().split() if w in {"um", "uh", "like"})
         assert filler_count < 3
 
+    def test_preserves_meaningful_pronouns_and_articles(self):
+        text = "I like you just the way you are."
+        assert filter_hallucinations(text) == text
+
+    def test_preserves_leading_article(self):
+        text = "A small idea can become something useful."
+        assert filter_hallucinations(text) == text
+
     def test_short_text_passthrough(self):
         assert filter_hallucinations("hi") == "hi"
 

@@ -85,7 +85,7 @@ def _prompt_models() -> list[str]:
         cached = "  ✓" if _is_model_cached(name) else ""
         rec = "  (recommended)" if name in RECOMMENDED_MODELS else ""
         print(f"  {i:>2}. {name:<16} {get_model_size(name):<8}{cached}{rec}")
-    
+
     print("\nAvailable Embedded AI Cleanup Models (Metal GPU):")
     print("-" * 56)
     for j, name in enumerate(AVAILABLE_LLM_MODELS, len(AVAILABLE_MODELS) + 1):

@@ -1,81 +1,51 @@
-# RoastMyAudio Makefile
-# All commands run inside the project-local virtual environment.
-# Nothing is installed outside this directory.
-
-PYTHON    := python3
-VENV      := .venv
-PIP       := $(VENV)/bin/pip
-PY        := $(VENV)/bin/python
-RUFF      := $(VENV)/bin/ruff
-PYTEST    := $(VENV)/bin/pytest
-
-.PHONY: help setup run web test lint download bundle clean
-
-# ── Default target ────────────────────────────────────────────────────────
+# Local verification only. VERSION is authoritative. Override PYTHON as needed.
+PYTHON ?= python3.12
+VENV ?= .venv
+PY := $(VENV)/bin/python
+PIP := $(VENV)/bin/pip
+.DEFAULT_GOAL := help
+.PHONY: help setup setup-macos setup-cleanup web run download test lint verify screenshots package prepare-release draft-release clean
 help:
-	@echo ""
-	@echo "  RoastMyAudio — open-source alternative to Wispr Flow"
-	@echo ""
-	@echo "  make setup      Create .venv and install all dependencies"
-	@echo "  make run        Launch the macOS menu bar app"
-	@echo "  make web        Launch the Flask web UI (http://127.0.0.1:5000)"
-	@echo "  make download   Download Whisper models interactively"
-	@echo "  make test       Run the pytest test suite"
-	@echo "  make lint       Run ruff linter"
-	@echo "  make bundle     Build a distributable RoastMyAudio.app (requires py2app)"
-	@echo "  make clean      Remove .venv, cache, and compiled files"
-	@echo ""
-
-# ── Setup ─────────────────────────────────────────────────────────────────
+	@echo "RoastMyAudio · your voice, in words"
+	@echo "setup / setup-macos / setup-cleanup · install core / native extras / optional AI"
+	@echo "web / run / download · web workspace / macOS app / pre-download models"
+	@echo "test / lint / verify / screenshots · local checks and browser captures"
+	@echo "setup-bundle / build-macos / smoke-macos · local native preview"
+	@echo "package / prepare-release / draft-release · source-only release tooling"
 setup:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "→ Creating virtual environment in $(VENV)/"; \
-		$(PYTHON) -m venv $(VENV); \
-	fi
-	@echo "→ Upgrading pip..."
-	@$(PIP) install --upgrade pip --quiet
-	@echo "→ Installing runtime dependencies..."
-	@$(PIP) install -r requirements.txt
-	@if [ -f requirements-dev.txt ]; then $(PIP) install -r requirements-dev.txt; fi
-	@echo ""
-	@echo "✓ Setup complete."
-	@echo "  Run 'make run' to start the menu bar app."
-	@echo "  Run 'make download' to pre-download Whisper & LLM models."
-
-# ── Run applications ──────────────────────────────────────────────────────
-run: $(VENV)/bin/activate
-	@echo "→ Starting RoastMyAudio menu bar app..."
-	$(PY) src/apps/macos/menubar_dictation.py
-
-web: $(VENV)/bin/activate
-	@echo "→ Starting Flask web UI on http://127.0.0.1:5000 ..."
+	$(PYTHON) -m venv $(VENV)
+	$(PIP) install -r requirements.txt -r requirements-dev.txt
+setup-macos: setup
+	$(PIP) install -e '.[macos]'
+setup-cleanup:
+	$(PIP) install -e '.[cleanup]'
+web:
 	$(PY) src/apps/web/app.py
-
-# ── Model management ──────────────────────────────────────────────────────
-download: $(VENV)/bin/activate
+run:
+	$(PY) src/apps/macos/launcher.py
+download:
 	$(PY) scripts/download_models.py
-
-# ── Development tools ─────────────────────────────────────────────────────
-test: $(VENV)/bin/activate
-	$(PYTEST) tests/
-
-lint: $(VENV)/bin/activate
-	$(RUFF) check src/ config/ tests/
-
-lint-fix: $(VENV)/bin/activate
-	$(RUFF) check --fix src/ config/ tests/
-
-# ── App bundle (macOS .app) ───────────────────────────────────────────────
-bundle: $(VENV)/bin/activate
-	@echo "→ Building RoastMyAudio.app..."
-	$(PIP) install py2app
-	$(PY) setup_bundle.py py2app
-	@echo "✓ App built in dist/RoastMyAudio.app"
-
-# ── Cleanup ───────────────────────────────────────────────────────────────
+test:
+	$(PY) -m pytest tests
+lint:
+	$(PY) -m ruff check src config tests scripts
+verify:
+	RMA_PYTHON=$(PY) bash scripts/verify.sh
+screenshots:
+	node scripts/screenshots.cjs
+package:
+	$(PY) scripts/package_source.py
+prepare-release:
+	RMA_PYTHON=$(PY) bash scripts/prepare-release.sh
+draft-release:
+	$(PY) scripts/draft_release.py
 clean:
-	@echo "→ Removing virtual environment and compiled files..."
-	rm -rf $(VENV) __pycache__ .pytest_cache .ruff_cache
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -name "*.pyc" -delete 2>/dev/null || true
-	@echo "✓ Clean complete. Run 'make setup' to start fresh."
+	$(PY) -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache', '.ruff_cache', 'build', 'roastmyaudio.egg-info']]"
+
+.PHONY: setup-bundle build-macos smoke-macos
+setup-bundle:
+	$(PIP) install -e '.[macos,bundle]'
+build-macos:
+	$(PY) scripts/build_macos.py
+smoke-macos:
+	$(PY) scripts/smoke_macos_workspace.py

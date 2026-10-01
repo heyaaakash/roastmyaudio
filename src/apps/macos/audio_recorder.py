@@ -11,11 +11,11 @@ import numpy as np
 import sounddevice as sd
 
 # Audio constants — must match Whisper's expected input format
-SAMPLE_RATE = 16_000   # Hz — Whisper native sample rate
-CHANNELS = 1           # Mono
+SAMPLE_RATE = 16_000  # Hz — Whisper native sample rate
+CHANNELS = 1  # Mono
 DTYPE = "float32"
-AUDIO_NORM_TARGET_RMS = 0.15   # Target RMS after normalization
-AUDIO_NORM_MAX_SCALE = 2.0     # Never boost more than 2x
+AUDIO_NORM_TARGET_RMS = 0.15  # Target RMS after normalization
+AUDIO_NORM_MAX_SCALE = 2.0  # Never boost more than 2x
 
 
 # ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ def normalize_audio(audio: np.ndarray) -> np.ndarray:
     """
     if audio.size == 0:
         return audio
-    rms = float(np.sqrt(np.mean(audio ** 2)))
+    rms = float(np.sqrt(np.mean(audio**2)))
     if rms < 0.001:
         return audio  # Near-silent — leave as-is to avoid amplifying pure noise
     scale = min(AUDIO_NORM_TARGET_RMS / rms, AUDIO_NORM_MAX_SCALE)
@@ -116,16 +116,23 @@ class AudioRecorder:
             device=self.device_id,
             callback=_cb,
         )
-        self._stream.start()
+        try:
+            self._stream.start()
+        except Exception:
+            self._stream.close()
+            self._stream = None
+            raise
 
     def stop(self) -> np.ndarray:
         """
         Stop the stream and return all captured audio as a flat float32 array.
         """
         if self._stream is not None:
-            self._stream.stop()
-            self._stream.close()
-            self._stream = None
+            stream, self._stream = self._stream, None
+            try:
+                stream.stop()
+            finally:
+                stream.close()
 
         if not self._chunks:
             return np.zeros(0, dtype=np.float32)

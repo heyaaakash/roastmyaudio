@@ -13,9 +13,10 @@ A world-class, glassmorphic liquid "pill" overlay inspired by Apple Intelligence
 Only available when AppKit (PyObjC) is installed on macOS.
 """
 
+from __future__ import annotations
+
 import math
 import random
-from typing import Optional
 
 try:
     import objc
@@ -63,6 +64,7 @@ try:
         NSHapticFeedbackPatternGeneric,
         NSHapticFeedbackPerformanceTimeNow,
     )
+
     HAPTICS_AVAILABLE = True
 except Exception:
     HAPTICS_AVAILABLE = False
@@ -117,7 +119,7 @@ def _normalize_audio_level(rms: float) -> float:
     norm = rms / _AUDIO_LEVEL_FULL_RMS
     if norm >= 1.0:
         return 1.0
-    return norm ** 0.5
+    return norm**0.5
 
 
 def _bar_x_positions(count: int, width: float, gap: float, container_width: float) -> list[float]:
@@ -152,9 +154,15 @@ if APPKIT_AVAILABLE:
             self._bars = []
 
             # Dynamic Siri / Gemini multi-stop aurora palette
-            c1 = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.02, 0.71, 0.95, 0.98).CGColor  # Electric Cyan
-            c2 = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.55, 0.27, 0.97, 0.98).CGColor  # Neon Violet
-            c3 = NSColor.colorWithCalibratedRed_green_blue_alpha_(0.96, 0.25, 0.52, 0.98).CGColor  # Hot Pink / Coral
+            c1 = NSColor.colorWithCalibratedRed_green_blue_alpha_(
+                0.02, 0.71, 0.95, 0.98
+            ).CGColor  # Electric Cyan
+            c2 = NSColor.colorWithCalibratedRed_green_blue_alpha_(
+                0.55, 0.27, 0.97, 0.98
+            ).CGColor  # Neon Violet
+            c3 = NSColor.colorWithCalibratedRed_green_blue_alpha_(
+                0.96, 0.25, 0.52, 0.98
+            ).CGColor  # Hot Pink / Coral
 
             for i in range(WAVEFORM_BAR_COUNT):
                 bar = CAGradientLayer.layer()
@@ -180,9 +188,7 @@ if APPKIT_AVAILABLE:
         def _layout_bars(self):
             bounds = self.bounds()
             W = bounds.size.width
-            xs = _bar_x_positions(
-                WAVEFORM_BAR_COUNT, WAVEFORM_BAR_WIDTH, WAVEFORM_BAR_GAP, W
-            )
+            xs = _bar_x_positions(WAVEFORM_BAR_COUNT, WAVEFORM_BAR_WIDTH, WAVEFORM_BAR_GAP, W)
             CATransaction.begin()
             CATransaction.setValue_forKey_(True, "disableActions")
             for i, bar in enumerate(self._bars):
@@ -232,9 +238,7 @@ if APPKIT_AVAILABLE:
             bounds = self.bounds()
             W = bounds.size.width
             H = bounds.size.height
-            xs = _bar_x_positions(
-                WAVEFORM_BAR_COUNT, WAVEFORM_BAR_WIDTH, WAVEFORM_BAR_GAP, W
-            )
+            xs = _bar_x_positions(WAVEFORM_BAR_COUNT, WAVEFORM_BAR_WIDTH, WAVEFORM_BAR_GAP, W)
 
             # High-energy multi-harmonic traveling waves
             t = self._tick_count * 0.18
@@ -356,13 +360,9 @@ class DictationOverlay:
     def _layout_content(self):
         w, h = self.PILL_WIDTH, self.PILL_HEIGHT
         if self._waveform is not None:
-            self._waveform.setFrame_(
-                NSMakeRect(self.WAVEFORM_X, 14, self.WAVEFORM_W, h - 28)
-            )
+            self._waveform.setFrame_(NSMakeRect(self.WAVEFORM_X, 14, self.WAVEFORM_W, h - 28))
         if self._title_label is not None:
-            self._title_label.setFrame_(
-                NSMakeRect(self.TEXT_X, h - 28, w - self.TEXT_W_INSET, 16)
-            )
+            self._title_label.setFrame_(NSMakeRect(self.TEXT_X, h - 28, w - self.TEXT_W_INSET, 16))
         if self._preview_label is not None:
             self._preview_label.setFrame_(
                 NSMakeRect(self.TEXT_X, 12, w - self.TEXT_W_INSET, h - 42)
@@ -401,17 +401,15 @@ class DictationOverlay:
             NSMakeRect(0, 0, self.PILL_WIDTH, self.PILL_HEIGHT)
         )
         ve.setBlendingMode_(1)  # NSVisualEffectBlendingModeWithinWindow
-        ve.setMaterial_(2)      # NSVisualEffectMaterialDark
-        ve.setState_(1)         # NSVisualEffectStateActive
+        ve.setMaterial_(2)  # NSVisualEffectMaterialDark
+        ve.setState_(1)  # NSVisualEffectStateActive
         ve.setWantsLayer_(True)
 
         # Pill Corner Geometry & Specular Border Rim
         ve.layer().setCornerRadius_(self.PILL_HEIGHT / 2.0)
         ve.layer().setMasksToBounds_(True)
         ve.layer().setBorderWidth_(1.5)
-        ve.layer().setBorderColor_(
-            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.25).CGColor
-        )
+        ve.layer().setBorderColor_(NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.25).CGColor)
         ve.layer().setBackgroundColor_(
             NSColor.colorWithCalibratedRed_green_blue_alpha_(0.10, 0.11, 0.14, 0.96).CGColor
         )
@@ -470,38 +468,44 @@ class DictationOverlay:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    def show(self):
+    def show(self, feedback=True):
         """Show the overlay on the screen containing the mouse pointer."""
         if not self.window:
             return
+        from AppKit import NSWorkspace
+
+        self._reduce_motion = NSWorkspace.sharedWorkspace().accessibilityDisplayShouldReduceMotion()
         screen = self._screen_for_current_pointer()
         frame = self._pill_frame_for_screen(screen)
         self.window.setFrame_display_(frame, True)
         self._layout_content()
         if self._waveform is not None:
             self._waveform.reset()
-            self._waveform.resume_animation()
+            if not self._reduce_motion:
+                self._waveform.resume_animation()
         self.set_preview_text("Listening...")
         self.window.setAlphaValue_(1.0)
         self.window.orderFrontRegardless()
-        self._play_cue(self._cue_start)
-        trigger_haptic()
+        if feedback:
+            self._play_cue(self._cue_start)
+            trigger_haptic()
 
-    def hide(self):
+    def hide(self, feedback=True):
         """Fade the overlay out and remove it from screen with haptic release."""
         if not self.window:
             return
         if self._waveform is not None:
             self._waveform.pause_animation()
-        self._play_cue(self._cue_stop)
-        trigger_haptic()
+        if feedback:
+            self._play_cue(self._cue_stop)
+            trigger_haptic()
         self._animate_alpha(0.0, 0.14, self._order_out)
 
     def _order_out(self):
         if self.window is not None:
             self.window.orderOut_(None)
 
-    def set_title(self, text: str, mode: Optional[str] = None):
+    def set_title(self, text: str, mode: str | None = None):
         """Update the small caption with model info and context mode pill."""
         if not self._title_label:
             return

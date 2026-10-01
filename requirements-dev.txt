@@ -1,6 +1,6 @@
-# RoastMyAudio — Development dependencies
-# Install with: pip install -r requirements-dev.txt
-
-ruff>=0.4.0
-pytest>=8.0.0
-pytest-mock>=3.12.0
+ruff>=0.4
+pytest>=8
+pytest-mock>=3.12
+build>=1
+setuptools>=68
+wheel

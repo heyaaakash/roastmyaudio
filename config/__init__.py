@@ -5,6 +5,7 @@ from config.config import (  # noqa: F401
     DATA_DIR,
     DEFAULT_LLM_MODEL,
     DEFAULT_MODEL,
+    DESKTOP_MODE,
     DICTIONARY_PATH,
     FALLBACK_HOLD_HOTKEY,
     FAST_COMMIT_CHUNK_SEC,

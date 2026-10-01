@@ -1,22 +1,12 @@
-## What this PR does
+## Problem and resulting behavior
 
-Brief description of the change and why it's needed.
+Describe the user-facing problem, the trigger, and what this change does.
 
-Fixes # (issue)
+## Validation
 
-## Type of change
+List commands and actual results. For UI changes, include desktop/mobile captures
+and label fictional fixtures. Disclose untested microphone/native behavior.
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Refactor / code quality
-- [ ] Documentation
-- [ ] CI / tooling
+## Data and release impact
 
-## Checklist
-
-- [ ] `make test` passes
-- [ ] `make lint` reports no errors
-- [ ] All paths remain inside the project directory (no writes to `~/.cache` or system locations)
-- [ ] Models still cache to `cache/models/`
-- [ ] New shared utilities go in `src/shared/`, not in `src/apps/`
-- [ ] No new required dependencies added without discussion in an issue
+Note changes to storage, model downloads, permissions, migration, or public claims.

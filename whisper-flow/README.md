@@ -1,3 +1,5 @@
+> **Retained prototype.** Use the canonical application and current instructions in the [root README](../README.md). The instructions and claims below describe earlier work and are not current release evidence.
+
 # 🎙️ RoastMyAudio
 
 A professional macOS dictation tool and web interface powered by **OpenAI Whisper**, **Faster-Whisper**, and **WhisperX**. It features real-time transcription, LLM-based text cleanup, and seamless macOS integration.

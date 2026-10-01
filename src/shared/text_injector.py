@@ -38,7 +38,7 @@ class AppMonitor:
         while self._running:
             app = get_active_app()
             # Only update if it's not our own app (avoid self-reference)
-            if app and "python" not in app.lower() and "wispr" not in app.lower():
+            if app and not any(name in app.lower() for name in ("python", "wispr", "roastmyaudio")):
                 self._last_app = app
             time.sleep(0.5)
 

@@ -1,439 +1,857 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flow — Voice Dictation & Audio History</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-  <div class="app-container">
-    <!-- Top macOS Window Bar -->
-    <header class="window-titlebar">
-      <div class="window-controls">
-        <span class="traffic-dot red"></span>
-        <span class="traffic-dot yellow"></span>
-        <span class="traffic-dot green"></span>
-      </div>
-      <div class="window-title">
-        <button id="sidebarToggleBtn" class="icon-btn" title="Toggle Sidebar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18"/></svg>
-        </button>
-      </div>
-      <div class="window-actions">
-        <button class="icon-btn header-notif-btn" title="Notifications">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="notif-dot"></span>
-        </button>
-        <div class="user-avatar" title="Account">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
-      </div>
-    </header>
-
-    <div class="app-body">
-      <!-- Left Sidebar -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A little less typing. A little more thinking. Your local voice workspace."
+    />
+    <meta name="theme-color" content="#f6f5f1" />
+    <title>RoastMyAudio · Your voice, in words</title>
+    <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to workspace</a>
+    <div class="app-shell">
       <aside class="sidebar" id="sidebar">
-        <div class="brand-header">
-          <div class="brand-logo">
-            <svg class="brand-wave-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M4 10v4h2v-4H4zm4-4v12h2V6H8zm4-4v20h2V2h-2zm4 4v12h2V6h-2zm4 4v4h2v-4h-2z"/>
-            </svg>
-            <span class="brand-name">Flow</span>
-          </div>
-          <span class="badge-basic">Basic</span>
+        <a class="brand" href="#dictation" aria-label="RoastMyAudio home"
+          ><img src="/static/icon.svg" width="34" height="34" alt="" /><span
+            >roast<span class="brand-light">myaudio</span
+            ><small>A SPACE FOR YOUR VOICE</small></span
+          ></a
+        >
+        <div class="workspace-label">
+          <span class="workspace-avatar">R</span
+          ><span>Personal workspace<small>On this computer</small></span
+          ><span class="local-dot" title="Local workspace"></span>
         </div>
-
-        <nav class="sidebar-nav">
-          <button class="nav-item active" data-tab="dictation">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-            <span>Dictation</span>
+        <span class="nav-label">WORKSPACE</span>
+        <nav aria-label="Workspace">
+          <button
+            class="nav-item active"
+            data-view="dictation"
+            aria-current="page"
+          >
+            <span data-icon="wave"></span>Dictation<span class="nav-shortcut"
+              >⌥ D</span
+            >
           </button>
-
-          <button class="nav-item" data-tab="notetaker">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-            <span>Notetaker</span>
-            <span class="badge-new">New!</span>
+          <button class="nav-item" data-view="dictionary">
+            <span data-icon="book"></span>Dictionary<span
+              class="nav-count"
+              id="dictionaryCount"
+              >0</span
+            >
           </button>
-
-          <button class="nav-item" data-tab="insights">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-            <span>Insights</span>
+          <button class="nav-item" data-view="scratchpad">
+            <span data-icon="edit"></span>Scratchpad
           </button>
-
-          <button class="nav-item" data-tab="dictionary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
-            <span>Dictionary</span>
-          </button>
-
-          <button class="nav-item" data-tab="snippets">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-            <span>Snippets</span>
-          </button>
-
-          <button class="nav-item" data-tab="style">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-            <span>Style</span>
-          </button>
-
-          <button class="nav-item" data-tab="transforms">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
-            <span>Transforms</span>
-          </button>
-
-          <button class="nav-item" data-tab="scratchpad">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
-            <span>Scratchpad</span>
+          <button class="nav-item" data-view="settings">
+            <span data-icon="sliders"></span>Settings
           </button>
         </nav>
-
-        <div class="sidebar-quota-card">
-          <div class="quota-remaining"><span id="quotaWordsCount">1,631</span> words remaining</div>
-          <div class="quota-desc">You get 2,000 words per week. Upgrade for unlimited access.</div>
-          <button class="btn-upgrade-pro" id="upgradeProBtn">Upgrade to Pro</button>
-        </div>
-
-        <div class="sidebar-footer">
-          <button class="footer-link-btn" id="inviteTeamBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Invite your team</span>
+        <div class="sidebar-bottom">
+          <div class="privacy-card">
+            <span data-icon="shield"></span
+            ><strong>Big thoughts. Small footprint.</strong>
+            <p>
+              Audio is processed on this computer. Your words stay in your
+              workspace.
+            </p>
+            <button class="text-button" id="privacyBtn">
+              How it works <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <button class="nav-item" id="helpBtn">
+            <span data-icon="help"></span>Help & shortcuts<span
+              class="nav-shortcut"
+              >?</span
+            >
           </button>
-
-          <button class="footer-link-btn" id="freeMonthBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-            <span>Get a free month</span>
-          </button>
-
-          <button class="footer-link-btn" id="openSettingsBtn" data-tab="settings">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span>Settings</span>
-            <span class="badge-count">1</span>
-          </button>
-
-          <button class="footer-link-btn" id="openHelpBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <span>Help</span>
-          </button>
+          <a
+            class="maker"
+            href="https://github.com/heyaaakash/roastmyaudio"
+            target="_blank"
+            rel="noopener"
+            ><span class="maker-symbol">✳</span
+            ><span
+              >Built for the joy of building<small
+                >Open source · v{{ version }}</small
+              ></span
+            ><span aria-hidden="true">↗</span></a
+          >
         </div>
       </aside>
-
-      <!-- Main App Content -->
-      <main class="main-content">
-        <!-- TAB: DICTATION (Main Wispr Flow History) -->
-        <section class="tab-view active" id="tab-dictation">
-          <div class="content-header">
-            <h1 class="welcome-heading">Welcome back, <span id="userNameGreeting">Aakash</span></h1>
+      <div class="workspace">
+        <header class="topbar">
+          <div class="breadcrumb">
+            <button
+              class="icon-button mobile-menu"
+              id="menuBtn"
+              aria-label="Toggle navigation"
+              aria-expanded="false"
+            >
+              <span data-icon="menu"></span></button
+            ><span>Workspace</span><span class="slash">/</span
+            ><strong id="pageName">Dictation</strong>
           </div>
-
-          <!-- Top Hero Grid -->
-          <div class="hero-grid">
-            <!-- Left Hero Banner -->
-            <div class="hero-banner">
-              <div class="hero-banner-content">
-                <h2 class="hero-title">Make Flow sound like <em>you</em></h2>
-                <p class="hero-subtitle">Set up different writing styles for different apps.</p>
-                <button class="btn-start-now" id="startStyleBannerBtn">Start now</button>
-              </div>
-              <div class="hero-banner-art">
-                <div class="ambient-glow"></div>
+          <div class="topbar-right">
+            <span class="connection" id="connectionStatus"
+              ><i></i>Local workspace</span
+            ><button
+              class="icon-button"
+              id="themeBtn"
+              aria-label="Switch to dark appearance"
+            >
+              <span data-icon="moon"></span>
+            </button>
+          </div>
+        </header>
+        <main id="main" tabindex="-1">
+          <section
+            class="view active"
+            id="view-dictation"
+            aria-labelledby="dictationHeading"
+          >
+            <div class="eyebrow">
+              <span class="tiny-star">✳</span> LESS TYPING. MORE YOU.
+            </div>
+            <div class="heading-row">
+              <h1 id="dictationHeading">
+                Good ideas start<br />with <em>your voice.</em>
+              </h1>
+              <div class="heading-note">
+                The messy first thought.<br />The message you've been meaning to
+                send.<br />Just say it.
               </div>
             </div>
-
-            <!-- Right Stats Widget Card -->
-            <div class="stats-card">
-              <div class="stats-metrics">
-                <div class="stat-item">
-                  <div class="stat-value" id="statTotalWords">35.5K</div>
-                  <div class="stat-label">total words</div>
+            <div class="recording-card" id="recordingCard">
+              <div class="recording-copy">
+                <span class="pill"><i></i> YOUR VOICE, IN WORDS</span>
+                <h2 id="recordHeading">
+                  Let your thoughts<br />do the talking.
+                </h2>
+                <p id="recordDescription">
+                  Speak naturally. We'll turn it into text<br />you can take
+                  anywhere.
+                </p>
+                <div class="record-actions">
+                  <button class="button primary" id="recordBtn">
+                    <span data-icon="mic"></span
+                    ><span id="recordLabel">Start dictating</span></button
+                  ><span class="keyboard-hint"
+                    ><kbd>⌥</kbd><kbd>D</kbd> to start / stop</span
+                  >
                 </div>
-                <div class="stat-item">
-                  <div class="stat-value" id="statWpm">106</div>
-                  <div class="stat-label">wpm</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-value" id="statStreak">1</div>
-                  <div class="stat-label">day streak</div>
+                <div class="record-options">
+                  <label for="quickStyle">Writing mode</label
+                  ><select id="quickStyle">
+                    <option value="clean">Polished</option>
+                    <option value="verbatim">Keep my words</option></select
+                  ><span class="option-separator"></span
+                  ><span id="quickModelLabel">Whisper · base</span>
                 </div>
               </div>
-
-              <div class="voice-profile-box" id="voiceProfileBox">
-                <button class="close-box-btn" id="closeVoiceProfileBtn" title="Dismiss">✕</button>
-                <div class="profile-title">Voice Profile Unlocked!</div>
-                <div class="profile-subtitle">Discover your unique insights</div>
-                <button class="btn-create-report" id="createReportBtn">Create report</button>
+              <div class="voice-art" aria-hidden="true">
+                <div class="orbit orbit-one"></div>
+                <div class="orbit orbit-two"></div>
+                <div class="orbit orbit-three"></div>
+                <div class="orbit-dot dot-one"></div>
+                <div class="orbit-dot dot-two"></div>
+                <div class="voice-orb">
+                  <div class="waveform" id="waveform"></div>
+                </div>
+                <div class="voice-art-label" id="artLabel">
+                  A little room to think out loud.
+                </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Timeline Section -->
-          <div class="timeline-container">
-            <!-- Search & Actions Bar -->
-            <div class="timeline-toolbar">
-              <div class="quick-mic-action">
-                <button class="btn-record-mic" id="webRecordBtn" title="Record Voice">
-                  <svg class="mic-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-                  <span id="webRecordLabel">Dictate Now</span>
+              <div class="recording-live" id="recordingLive" hidden>
+                <span class="record-dot"></span
+                ><span id="recordState" role="status">Listening</span
+                ><time id="recordTimer">0:00</time
+                ><button class="text-button" id="cancelRecordBtn">
+                  Discard
                 </button>
-                <span class="live-rec-timer" id="webRecTimer" style="display:none;">0:00</span>
-              </div>
-
-              <div class="search-box">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                <input type="text" id="timelineSearchInput" placeholder="Search transcriptions..." autocomplete="off">
               </div>
             </div>
-
-            <!-- Grouped Recordings Timeline List -->
-            <div class="timeline-list" id="timelineList">
-              <div class="loading-state">
-                <div class="spinner"></div>
-                <p>Loading your recordings...</p>
+            <div class="session-result" id="sessionResult" hidden>
+              <div class="result-heading">
+                <span data-icon="check"></span
+                ><strong>Your words, ready to go.</strong
+                ><button class="text-button" id="copyResultBtn">
+                  Copy text <span data-icon="copy"></span>
+                </button>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- TAB: NOTETAKER -->
-        <section class="tab-view" id="tab-notetaker">
-          <div class="view-header">
-            <h2>AI Notetaker</h2>
-            <p>Automatically summarize meetings, voice memos, and generate action items.</p>
-          </div>
-          <div class="notetaker-canvas">
-            <div class="notetaker-toolbar">
-              <button class="btn-primary" id="startMeetingBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-                Start Meeting Notes
+              <p id="resultText"></p>
+              <button class="text-button" id="draftResultBtn">
+                Continue in scratchpad <span aria-hidden="true">→</span>
               </button>
             </div>
-            <div class="notes-editor" contenteditable="true" placeholder="Meeting transcript and structured notes will appear here...">
-              <h3>Meeting Notes Template</h3>
-              <p><strong>Date:</strong> August 15, 2026</p>
-              <h4>Key Discussion Points:</h4>
-              <ul>
-                <li>Mac menu bar audio recording with persistent WAV caching</li>
-                <li>Whisperflow-style one-click retry for LLM cleanup and speech regeneration</li>
-              </ul>
-              <h4>Action Items:</h4>
-              <ul>
-                <li>[x] Deliver full interactive dashboard matching screenshot</li>
-              </ul>
+            <div
+              class="stats-strip"
+              aria-label="Your actual workspace activity"
+            >
+              <div>
+                <span data-icon="type"></span><strong id="statWords">0</strong
+                ><span>words captured</span>
+              </div>
+              <div>
+                <span data-icon="wave"></span
+                ><strong id="statRecordings">0</strong><span>recordings</span>
+              </div>
+              <div>
+                <span data-icon="clock"></span
+                ><strong id="statMinutes">0</strong
+                ><span>minutes of thought</span>
+              </div>
+              <span class="stats-note">Every word starts somewhere.</span>
             </div>
-          </div>
-        </section>
-
-        <!-- TAB: INSIGHTS -->
-        <section class="tab-view" id="tab-insights">
-          <div class="view-header">
-            <h2>Voice Insights & Analytics</h2>
-            <p>Track your speech speed, words spoken, and time saved compared to typing.</p>
-          </div>
-          <div class="insights-grid">
-            <div class="insight-card">
-              <div class="insight-number" id="insightTotalWords">35,500</div>
-              <div class="insight-label">Total Words Spoken</div>
+            <div class="history-heading">
+              <div>
+                <h2>Your recent thoughts <span id="historyCount">0</span></h2>
+                <p>A home for everything you've said.</p>
+              </div>
+              <button class="text-button" id="exportBtn">
+                <span data-icon="download"></span> Export
+              </button>
             </div>
-            <div class="insight-card">
-              <div class="insight-number" id="insightAvgWpm">106 WPM</div>
-              <div class="insight-label">Average Speaking Speed</div>
+            <div class="history-toolbar">
+              <div
+                class="filter-tabs"
+                role="group"
+                aria-label="Filter recordings"
+              >
+                <button
+                  class="filter active"
+                  data-filter="all"
+                  aria-pressed="true"
+                >
+                  All thoughts</button
+                ><button
+                  class="filter"
+                  data-filter="saved"
+                  aria-pressed="false"
+                >
+                  Saved</button
+                ><button
+                  class="filter"
+                  data-filter="dismissed"
+                  aria-pressed="false"
+                >
+                  Dismissed
+                </button>
+              </div>
+              <label class="search"
+                ><span data-icon="search"></span
+                ><input
+                  id="searchInput"
+                  type="search"
+                  placeholder="Find a thought…"
+                  aria-label="Search transcriptions"
+                /><kbd>/</kbd></label
+              >
             </div>
-            <div class="insight-card">
-              <div class="insight-number" id="insightHoursSaved">4.2 hrs</div>
-              <div class="insight-label">Typing Time Saved</div>
+            <div class="demo-banner" id="demoBanner" hidden>
+              <span>Sample workspace · fictional transcripts, read-only</span
+              ><button class="text-button" id="exitDemoBtn">
+                Back to my workspace ×
+              </button>
             </div>
-          </div>
-        </section>
-
-        <!-- TAB: DICTIONARY -->
-        <section class="tab-view" id="tab-dictionary">
-          <div class="view-header">
-            <h2>Personal Dictionary</h2>
-            <p>Add technical terms, proper nouns, and unique names so Whisper recognizes them accurately.</p>
-          </div>
-          <div class="dictionary-container">
-            <div class="dict-input-row">
-              <input type="text" id="newDictWordInput" placeholder="Add a word or phrase (e.g., PyTorch, Aakash, LLama)...">
-              <button class="btn-primary" id="addDictWordBtn">Add Word</button>
+            <div id="timeline" aria-live="polite" aria-busy="true">
+              <div class="loading">
+                <span class="spinner"></span>Opening your workspace…
+              </div>
             </div>
-            <div class="dict-tags" id="dictTagsList"></div>
-          </div>
-        </section>
-
-        <!-- TAB: SNIPPETS -->
-        <section class="tab-view" id="tab-snippets">
-          <div class="view-header">
-            <h2>Voice Snippets</h2>
-            <p>Create short trigger phrases that instantly expand into longer templates.</p>
-          </div>
-          <div class="snippets-list">
-            <div class="snippet-card">
-              <div class="snippet-trigger">"my calendar link"</div>
-              <div class="snippet-arrow">➔</div>
-              <div class="snippet-expansion">Feel free to pick a convenient slot on my calendar: https://cal.com/aakash</div>
+            <footer class="workspace-footer">
+              <span>Made for the way you think.</span
+              ><span
+                >Local processing <span class="footer-dot">·</span> No
+                subscription</span
+              >
+            </footer>
+          </section>
+          <section
+            class="view"
+            id="view-dictionary"
+            aria-labelledby="dictionaryHeading"
+            hidden
+          >
+            <div class="eyebrow">THE DETAILS MATTER</div>
+            <h1 id="dictionaryHeading">
+              Your words.<br /><em>Your vocabulary.</em>
+            </h1>
+            <p class="view-description">
+              Names, acronyms, and the terms you use every day. Give Whisper a
+              little context. Recognition can still vary.
+            </p>
+            <form class="dictionary-form" id="dictionaryForm">
+              <label class="sr-only" for="newWord">Word or phrase</label
+              ><input
+                id="newWord"
+                maxlength="100"
+                placeholder="A name, a product, an inside joke…"
+                required
+              /><button class="button primary" type="submit">
+                <span data-icon="plus"></span>Add word
+              </button>
+            </form>
+            <div class="dictionary-list" id="dictionaryList"></div>
+            <div class="tip">
+              <span data-icon="sparkle"></span>
+              <p>
+                Start with the words that speech recognition tends to get wrong.
+                A small, specific vocabulary is a useful hint.
+              </p>
             </div>
-            <div class="snippet-card">
-              <div class="snippet-trigger">"bug report template"</div>
-              <div class="snippet-arrow">➔</div>
-              <div class="snippet-expansion">**Issue Description:**\n**Steps to Reproduce:**\n**Expected vs Actual:**</div>
+          </section>
+          <section
+            class="view"
+            id="view-scratchpad"
+            aria-labelledby="scratchpadHeading"
+            hidden
+          >
+            <div class="eyebrow">A PLACE TO WORK IT OUT</div>
+            <h1 id="scratchpadHeading">
+              From a thought<br />to <em>a first draft.</em>
+            </h1>
+            <p class="view-description">
+              A quiet place to edit. Your draft is saved in this browser, on
+              this device.
+            </p>
+            <div class="scratchpad-toolbar">
+              <span id="draftStatus" role="status">Saved in this browser</span>
+              <div>
+                <button class="text-button" id="clearDraftBtn">Clear</button
+                ><button class="button secondary" id="copyDraftBtn">
+                  <span data-icon="copy"></span>Copy draft
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
-
-        <!-- TAB: STYLE -->
-        <section class="tab-view" id="tab-style">
-          <div class="view-header">
-            <h2>App Writing Styles</h2>
-            <p>Automatically adjust your tone and formatting depending on the active application.</p>
-          </div>
-          <div class="style-cards-grid">
-            <div class="style-card">
-              <div class="style-app-name">Slack / Messages</div>
-              <div class="style-tone-badge">Casual & Friendly</div>
-              <p>Short sentences, natural conversational tone, friendly emojis when appropriate.</p>
+            <label class="sr-only" for="scratchpad">Your draft</label
+            ><textarea
+              id="scratchpad"
+              placeholder="Let a thought land here. Type something, or move a transcript into your draft…"
+            ></textarea>
+            <div class="draft-footer">
+              <span id="draftWordCount">0 words</span
+              ><button class="text-button" data-view="dictation">
+                Back to dictation →
+              </button>
             </div>
-            <div class="style-card">
-              <div class="style-app-name">Mail / Outlook</div>
-              <div class="style-tone-badge">Formal Email</div>
-              <p>Professional greetings, polished sentence structures, clear paragraphs.</p>
+          </section>
+          <section
+            class="view"
+            id="view-settings"
+            aria-labelledby="settingsHeading"
+            hidden
+          >
+            <div class="eyebrow">MAKE YOURSELF AT HOME</div>
+            <h1 id="settingsHeading">
+              A workspace<br />that feels <em>like you.</em>
+            </h1>
+            <p class="view-description">
+              Shared settings for the web workspace and native app. New models
+              download on first use; larger models take more memory and time.
+            </p>
+            <div class="desktop-only desktop-tools" hidden>
+              <button id="reopenSetupBtn" class="button secondary">
+                Review setup
+              </button>
+              <button id="diagnosticsBtn" class="text-button">
+                Export diagnostics
+              </button>
+              <button id="updatesBtn" class="text-button">
+                Check releases
+              </button>
             </div>
-            <div class="style-card">
-              <div class="style-app-name">Cursor / Xcode / GitHub</div>
-              <div class="style-tone-badge">Technical & Precise</div>
-              <p>CamelCase / snake_case code identifiers preserved, concise technical wording.</p>
+            <form id="settingsForm" class="settings-panel">
+              <div class="setting-row">
+                <div>
+                  <label for="modelSetting">Speech model</label>
+                  <p>Start with base. Try small for more demanding audio.</p>
+                </div>
+                <select id="modelSetting" name="model">
+                  <option value="tiny">tiny · lightest</option>
+                  <option value="tiny.en">tiny.en · English only</option>
+                  <option value="base">base · balanced</option>
+                  <option value="small">small · more detail</option>
+                  <option value="medium">medium · heavier</option>
+                  <option value="large-v3">large-v3 · largest</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div>
+                  <label for="languageSetting">Spoken language</label>
+                  <p>English-only models require English.</p>
+                </div>
+                <select id="languageSetting" name="language">
+                  <option value="en">English</option>
+                  <option value="auto">Auto-detect</option>
+                  <option value="hi">Hindi</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="ja">Japanese</option>
+                  <option value="zh">Chinese</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="it">Italian</option>
+                  <option value="ko">Korean</option>
+                  <option value="ru">Russian</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div>
+                  <label for="cleanupSetting">Local AI cleanup</label>
+                  <p>
+                    Optional grammar and punctuation pass. Falls back to your
+                    transcript if unavailable.
+                  </p>
+                </div>
+                <input
+                  class="switch"
+                  id="cleanupSetting"
+                  name="llm_enabled"
+                  type="checkbox"
+                  role="switch"
+                />
+              </div>
+              <div class="setting-row">
+                <div>
+                  <label for="llmSetting">Cleanup model</label>
+                  <p>Runs locally with llama.cpp when installed.</p>
+                </div>
+                <select id="llmSetting" name="llm_model">
+                  <option value="qwen2.5-0.5b">Qwen 2.5 · 0.5B</option>
+                  <option value="smollm2-360m">SmolLM2 · 360M</option>
+                </select>
+              </div>
+              <div class="desktop-only" hidden>
+                <div class="setting-row">
+                  <div>
+                    <label for="deviceSetting">Microphone</label>
+                    <p>
+                      Use the same input for workspace and shortcut dictation.
+                    </p>
+                  </div>
+                  <div class="inline-controls">
+                    <select id="deviceSetting">
+                      <option value="">System default</option></select
+                    ><button
+                      type="button"
+                      id="refreshDevicesBtn"
+                      class="text-button"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <label for="hotkeySetting">Dictation shortcut</label>
+                    <p>
+                      Ctrl+Option+D remains a fallback for external keyboards.
+                    </p>
+                  </div>
+                  <select id="hotkeySetting">
+                    <option value="fn">Fn + fallback</option>
+                    <option value="ctrl_option_d">Ctrl+Option+D</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <label for="modeSetting">Shortcut behavior</label>
+                    <p>
+                      The workspace button always starts and finishes a session.
+                    </p>
+                  </div>
+                  <select id="modeSetting">
+                    <option value="push_to_talk">Hold to talk</option>
+                    <option value="hands_free">Tap to start / stop</option>
+                  </select>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <label for="feedbackSetting"
+                      >Sound and haptic feedback</label
+                    >
+                    <p>
+                      A small cue when recording starts and stops. Off by
+                      default.
+                    </p>
+                  </div>
+                  <input
+                    id="feedbackSetting"
+                    class="switch"
+                    type="checkbox"
+                    role="switch"
+                  />
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <label for="contextSetting"
+                      >Use app and clipboard context</label
+                    >
+                    <p>
+                      Read clipboard text at the start of shortcut dictation for
+                      vocabulary hints. Off by default.
+                    </p>
+                  </div>
+                  <input
+                    id="contextSetting"
+                    class="switch"
+                    type="checkbox"
+                    role="switch"
+                  />
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <label for="commandsSetting">Spoken editing commands</label>
+                    <p>
+                      Interpret commands such as “new paragraph” while
+                      formatting.
+                    </p>
+                  </div>
+                  <input
+                    id="commandsSetting"
+                    class="switch"
+                    type="checkbox"
+                    role="switch"
+                  />
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <label for="loginSetting">Launch at login</label>
+                    <p id="loginHint">Available in the installed Mac app.</p>
+                  </div>
+                  <input
+                    id="loginSetting"
+                    class="switch"
+                    type="checkbox"
+                    role="switch"
+                    disabled
+                  />
+                </div>
+              </div>
+              <div class="settings-actions">
+                <span id="settingsStatus" role="status"
+                  >Changes apply to your next recording.</span
+                ><button class="button primary" type="submit">
+                  Save preferences
+                </button>
+              </div>
+            </form>
+            <section
+              class="personalization-panel"
+              aria-labelledby="libraryHeading"
+            >
+              <h2 id="libraryHeading">Words that work your way.</h2>
+              <p class="view-description">
+                Teach exact corrections, expand a whole spoken phrase into a
+                snippet, or choose a writing style for an app. Nothing is
+                learned automatically.
+              </p>
+              <form id="libraryForm" class="library-form">
+                <div>
+                  <label for="libraryType">Type</label
+                  ><select id="libraryType">
+                    <option value="corrections">Correction pair</option>
+                    <option value="snippets">Spoken snippet</option>
+                    <option value="app_styles">Application style</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="libraryTrigger"
+                    >Heard phrase / trigger / app name</label
+                  ><input
+                    id="libraryTrigger"
+                    required
+                    maxlength="10000"
+                    placeholder="For example: graph queue ell"
+                  />
+                </div>
+                <div>
+                  <label for="libraryText">Replacement text or style</label
+                  ><textarea
+                    id="libraryText"
+                    required
+                    maxlength="10000"
+                    rows="2"
+                    placeholder="For example: GraphQL"
+                  ></textarea>
+                </div>
+                <p class="library-hint">
+                  App names match exactly. Styles: default, verbatim, formal,
+                  casual, concise, bullets. AI styles need local cleanup
+                  enabled; verbatim keeps rule-based punctuation.
+                </p>
+                <button class="button secondary" type="submit">
+                  Add preference</button
+                ><span id="libraryStatus" role="status"></span>
+              </form>
+              <div id="libraryList" class="library-list"></div>
+            </section>
+            <div class="tip">
+              <span data-icon="shield"></span>
+              <p>
+                Your recordings, drafts and preferences are saved on this
+                computer. The Mac app uses its own Application Support folder;
+                source web development uses the project data folder. Dismissing
+                hides a recording; deleting removes its transcript and saved
+                audio. This local server has no sign-in and should stay on
+                loopback.
+              </p>
             </div>
-            <div class="style-card">
-              <div class="style-app-name">Notion / Notes</div>
-              <div class="style-tone-badge">Structured & Clear</div>
-              <p>Bullet lists, headers, clean organization for thoughts and notes.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- TAB: TRANSFORMS -->
-        <section class="tab-view" id="tab-transforms">
-          <div class="view-header">
-            <h2>AI Transforms</h2>
-            <p>One-click transforms to rewrite any voice transcript on demand.</p>
-          </div>
-          <div class="transforms-grid">
-            <div class="transform-preset-card" data-transform="formal">
-              <div class="transform-title">Executive / Formal</div>
-              <p>Elevate tone into professional, board-ready communication.</p>
-            </div>
-            <div class="transform-preset-card" data-transform="casual">
-              <div class="transform-title">Casual Chat</div>
-              <p>Relaxed and punchy for team chats and messaging.</p>
-            </div>
-            <div class="transform-preset-card" data-transform="bullets">
-              <div class="transform-title">Bullet Points</div>
-              <p>Extract core takeaways into concise bulleted lists.</p>
-            </div>
-            <div class="transform-preset-card" data-transform="concise">
-              <div class="transform-title">Ultra Concise</div>
-              <p>Strip all filler and summarize into one clear sentence.</p>
-            </div>
-            <div class="transform-preset-card" data-transform="meeting_notes">
-              <div class="transform-title">Action Items</div>
-              <p>Structure into Key Takeaways and To-Do lists.</p>
-            </div>
-            <div class="transform-preset-card" data-transform="grammar_only">
-              <div class="transform-title">Fix Grammar Only</div>
-              <p>Fix spelling and punctuation without changing wording.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- TAB: SCRATCHPAD -->
-        <section class="tab-view" id="tab-scratchpad">
-          <div class="view-header">
-            <h2>Live Scratchpad</h2>
-            <p>A persistent canvas to speak, edit, and copy formatted drafts.</p>
-          </div>
-          <div class="scratchpad-editor" contenteditable="true" id="scratchpadCanvas" placeholder="Click Dictate or hold Fn to stream voice text here..."></div>
-        </section>
-
-        <!-- TAB: SETTINGS -->
-        <section class="tab-view" id="tab-settings">
-          <div class="view-header">
-            <h2>App Settings & Models</h2>
-            <p>Configure local Whisper models, embedded Metal LLM engines, and hotkeys.</p>
-          </div>
-          <div class="settings-form">
-            <div class="setting-group">
-              <label>Whisper Speech-to-Text Model</label>
-              <select id="settingWhisperModel">
-                <option value="tiny.en">tiny.en (Fastest, ~75MB)</option>
-                <option value="base" selected>base (Default, ~145MB)</option>
-                <option value="small">small (High accuracy, ~480MB)</option>
-                <option value="medium">medium (Very high accuracy, ~1.5GB)</option>
-              </select>
-            </div>
-
-            <div class="setting-group">
-              <label>Embedded Local LLM Engine (Metal GPU)</label>
-              <select id="settingLlmModel">
-                <option value="qwen2.5-0.5b" selected>Qwen 2.5 0.5B Instruct (Fast & Accurate)</option>
-                <option value="smollm2-360m">SmolLM2 360M Instruct (Ultra-fast)</option>
-              </select>
-            </div>
-
-            <div class="setting-group">
-              <label>Dictation Hotkey</label>
-              <input type="text" value="Hold Fn Key (or Ctrl + Option + D)" disabled>
-            </div>
-
-            <div class="setting-group">
-              <label>Audio Persistence</label>
-              <input type="text" value="Active (Saved to data/recordings/*.wav)" disabled>
-            </div>
-          </div>
-        </section>
-      </main>
+          </section>
+        </main>
+      </div>
     </div>
-  </div>
-
-  <!-- Re-transcribe Modal -->
-  <div class="modal-backdrop" id="retranscribeModal" style="display:none;">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h3>Re-transcribe Audio Recording</h3>
-        <button class="modal-close-btn" id="closeRetranscribeModal">✕</button>
-      </div>
-      <div class="modal-body">
-        <p>Choose a Whisper model and language to regenerate this audio transcript from the saved WAV file:</p>
-        <div class="form-group">
-          <label>Whisper Model</label>
-          <select id="modalSelectModel">
-            <option value="base" selected>base (Recommended)</option>
-            <option value="small">small (Higher Accuracy)</option>
-            <option value="medium">medium (Best Accuracy)</option>
-            <option value="tiny.en">tiny.en (Fastest)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Language</label>
-          <select id="modalSelectLang">
-            <option value="en" selected>English</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-            <option value="de">German</option>
-            <option value="auto">Auto-detect</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" id="cancelRetranscribeBtn">Cancel</button>
-        <button class="btn-primary" id="confirmRetranscribeBtn">Re-transcribe Now</button>
-      </div>
+    <div class="native-recovery desktop-only" hidden>
+      <button id="retryNativeBtn" class="button secondary" hidden>
+        Retry saved recording</button
+      ><button id="discardNativeBtn" class="text-button" hidden>
+        Dismiss pending session
+      </button>
     </div>
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div class="toast-container" id="toastContainer"></div>
-
-  <script src="/static/app.js"></script>
-</body>
+    <dialog
+      id="setupDialog"
+      class="setup-dialog"
+      aria-labelledby="setupHeading"
+    >
+      <div class="dialog-header">
+        <div>
+          <div class="eyebrow">A LITTLE SETUP. A LOT LESS TYPING.</div>
+          <h2 id="setupHeading">Make room for your first thought.</h2>
+        </div>
+        <button class="icon-button" data-close-dialog aria-label="Close setup">
+          <span data-icon="close"></span>
+        </button>
+      </div>
+      <p>
+        Choose what you need, then say a fictional sentence to try it. You can
+        return to setup from Preferences.
+      </p>
+      <ol class="setup-steps">
+        <li>
+          <div>
+            <strong>Allow your microphone</strong>
+            <p>
+              Needed for every dictation.
+              <span data-permission-status="microphone">Checking…</span>
+            </p>
+          </div>
+          <button class="button secondary" data-permission="microphone">
+            Allow microphone
+          </button>
+        </li>
+        <li>
+          <div>
+            <strong>Enable shortcuts and paste</strong>
+            <p>
+              Optional for recording in this window. Required for dictating into
+              other apps.
+            </p>
+            <p>
+              Input Monitoring:
+              <span data-permission-status="input_monitoring">Checking…</span
+              ><br />Accessibility:
+              <span data-permission-status="accessibility">Checking…</span>
+            </p>
+          </div>
+          <div class="setup-permissions">
+            <button class="text-button" data-permission="input_monitoring">
+              Enable shortcuts</button
+            ><button class="text-button" data-permission="accessibility">
+              Enable paste
+            </button>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Prepare your speech model</strong>
+            <p>
+              The first download needs internet and disk space. You can change
+              models in Preferences.
+            </p>
+          </div>
+          <button id="prepareModelBtn" class="button secondary">
+            Prepare model
+          </button>
+        </li>
+        <li>
+          <div>
+            <strong>Say something simple</strong>
+            <p>
+              Try “A small idea can become something useful.” Finish, then
+              review your words below. Practice stays in this workspace.
+            </p>
+          </div>
+          <button id="practiceBtn" class="button primary">
+            Try a practice dictation
+          </button>
+        </li>
+      </ol>
+      <p id="setupProgress" class="setup-progress" role="status">
+        Checking your Mac…
+      </p>
+      <blockquote id="practiceResult" class="practice-result">
+        Your practice words will appear here.
+      </blockquote>
+      <div class="dialog-actions">
+        <button id="skipSetupBtn" class="text-button">Set up later</button
+        ><button id="finishSetupBtn" class="button primary" disabled>
+          Ready to dictate
+        </button>
+      </div>
+    </dialog>
+    <dialog id="helpDialog">
+      <div class="dialog-header">
+        <span class="eyebrow">A LITTLE GUIDANCE</span
+        ><button class="icon-button" data-close-dialog aria-label="Close help">
+          <span data-icon="close"></span>
+        </button>
+      </div>
+      <h2>Find your flow.</h2>
+      <p>
+        Click <strong>Start dictating</strong>, allow your microphone, speak,
+        then stop. Your first model download may take a while.
+      </p>
+      <dl class="shortcut-list">
+        <div>
+          <dt>Start / stop recording</dt>
+          <dd><kbd>Alt / Option</kbd> + <kbd>D</kbd></dd>
+        </div>
+        <div>
+          <dt>Search your thoughts</dt>
+          <dd><kbd>/</kbd></dd>
+        </div>
+        <div>
+          <dt>Open this guide</dt>
+          <dd><kbd>?</kbd></dd>
+        </div>
+        <div>
+          <dt>Close a dialog</dt>
+          <dd><kbd>Esc</kbd></dd>
+        </div>
+      </dl>
+      <p>
+        The Mac app uses one native microphone session for this window and
+        global shortcuts. Input Monitoring enables shortcuts; Accessibility
+        enables paste into other apps. Review setup in Preferences.
+      </p>
+      <a
+        class="button secondary"
+        href="https://github.com/heyaaakash/roastmyaudio/blob/main/docs/INSTALLATION.md"
+        target="_blank"
+        rel="noopener"
+        >Setup & troubleshooting ↗</a
+      >
+    </dialog>
+    <dialog id="privacyDialog">
+      <div class="dialog-header">
+        <span class="eyebrow">YOUR VOICE STAYS CLOSE</span
+        ><button
+          class="icon-button"
+          data-close-dialog
+          aria-label="Close privacy information"
+        >
+          <span data-icon="close"></span>
+        </button>
+      </div>
+      <h2>Local by design.</h2>
+      <p>
+        Your browser sends recorded audio to this Flask server. When you run it
+        on this computer, transcription and optional cleanup happen here.
+      </p>
+      <p>
+        Audio WAVs, transcripts, vocabulary, and settings are saved on this
+        computer. Models download from Hugging Face on first use and are cached
+        locally. Your scratchpad and appearance preference are saved with the
+        workspace, independently of its window or server port. Native clipboard
+        context is off by default and can be enabled in Preferences.
+      </p>
+      <p>
+        No analytics or external fonts are loaded by this interface. Don't
+        expose the unauthenticated server to a public network. Delete a
+        recording to remove its saved audio and history entry; dismissed
+        recordings remain stored.
+      </p>
+      <a
+        class="text-button"
+        href="https://github.com/heyaaakash/roastmyaudio/blob/main/docs/PRIVACY.md"
+        target="_blank"
+        rel="noopener"
+        >Read the privacy details ↗</a
+      >
+    </dialog>
+    <dialog id="recordingDialog">
+      <div class="dialog-header">
+        <span class="eyebrow">YOUR RECORDING</span
+        ><button
+          class="icon-button"
+          data-close-dialog
+          aria-label="Close recording details"
+        >
+          <span data-icon="close"></span>
+        </button>
+      </div>
+      <h2>A second look.</h2>
+      <label for="rawTranscript">Original transcript</label>
+      <p class="raw-transcript" id="rawTranscript"></p>
+      <label for="transformSelect">Rewrite with local AI</label>
+      <div class="dialog-actions">
+        <select id="transformSelect">
+          <option value="clean">Polish the writing</option>
+          <option value="formal">Professional tone</option>
+          <option value="casual">Casual tone</option>
+          <option value="bullets">Bullet points</option>
+          <option value="concise">Make it concise</option>
+          <option value="grammar_only">Grammar only</option></select
+        ><button class="button primary" id="transformBtn">Apply</button>
+      </div>
+      <p class="muted">
+        Optional local cleanup model required. Results can vary; review before
+        sharing.
+      </p>
+      <hr />
+      <label for="retryModel">Try another speech model</label>
+      <div class="dialog-actions">
+        <select id="retryModel">
+          <option value="base">base</option>
+          <option value="small">small</option>
+          <option value="tiny">tiny</option>
+          <option value="medium">medium</option></select
+        ><button class="button secondary" id="retryBtn">Re-transcribe</button>
+      </div>
+      <p class="muted" id="retryHint">
+        Uses the saved audio and your language preference.
+      </p>
+    </dialog>
+    <dialog id="confirmDialog">
+      <div class="dialog-header">
+        <span class="eyebrow">JUST CHECKING</span
+        ><button class="icon-button" data-close-dialog aria-label="Cancel">
+          <span data-icon="close"></span>
+        </button>
+      </div>
+      <h2 id="confirmHeading">Delete this thought?</h2>
+      <p id="confirmText">
+        This removes the transcript and its saved audio permanently.
+      </p>
+      <div class="dialog-actions">
+        <button class="button secondary" id="confirmCancel">Keep it</button
+        ><button class="button danger" id="confirmAction">
+          Delete recording
+        </button>
+      </div>
+    </dialog>
+    <div
+      class="toast-container"
+      id="toasts"
+      role="status"
+      aria-live="polite"
+    ></div>
+    <script src="/static/app.js" defer></script>
+  </body>
 </html>

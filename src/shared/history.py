@@ -9,9 +9,10 @@ import uuid
 import wave
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
+
+from src.shared.storage import synchronized, write_json
 
 # Add config directory to path
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
@@ -61,18 +62,19 @@ def _write_wav_file(audio: np.ndarray, wav_path: Path, sample_rate: int = SAMPLE
         wf.writeframes(pcm_data.tobytes())
 
 
+@synchronized(lambda: HISTORY_PATH)
 def save_recording(
-    audio: Optional[np.ndarray] = None,
+    audio: np.ndarray | None = None,
     raw: str = "",
     cleaned: str = "",
     app: str = "General",
     latency_ms: int = 0,
     model_used: str = "base",
     llm_model: str = "qwen2.5-0.5b",
-    duration_sec: Optional[float] = None,
-    formatted: Optional[str] = None,
+    duration_sec: float | None = None,
+    formatted: str | None = None,
     status: str = "completed",
-    recording_id: Optional[str] = None,
+    recording_id: str | None = None,
 ) -> dict:
     """
     Save audio recording file and record full session metadata in history.
@@ -135,6 +137,7 @@ def save(raw: str, cleaned: str, app: str, latency_ms: int):
     )
 
 
+@synchronized(lambda: HISTORY_PATH)
 def load() -> list[dict]:
     """Load all history entries."""
     if not HISTORY_PATH.exists():
@@ -142,9 +145,11 @@ def load() -> list[dict]:
     try:
         data = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
         if isinstance(data, list):
+            migrated = False
             # Ensure each entry has an id and date_group for UI
             for item in data:
                 if "id" not in item:
+                    migrated = True
                     item["id"] = f"legacy_{uuid.uuid4().hex[:8]}"
                 if "status" not in item:
                     item["status"] = "completed"
@@ -155,6 +160,8 @@ def load() -> list[dict]:
                         item["display_time"] = _format_display_time(dt)
                     except Exception:
                         item["date_group"] = "TODAY"
+            if migrated:
+                _persist_history(data)
             return data
         return []
     except Exception:
@@ -163,17 +170,16 @@ def load() -> list[dict]:
 
 def _persist_history(entries: list[dict]):
     """Persist history entries to disk."""
-    HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    HISTORY_PATH.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+    write_json(HISTORY_PATH, entries)
 
 
-def latest() -> Optional[dict]:
+def latest() -> dict | None:
     """Get the most recent history entry."""
     entries = load()
     return entries[0] if entries else None
 
 
-def get_recording(recording_id: str) -> Optional[dict]:
+def get_recording(recording_id: str) -> dict | None:
     """Find a specific recording by ID."""
     entries = load()
     for item in entries:
@@ -182,7 +188,8 @@ def get_recording(recording_id: str) -> Optional[dict]:
     return None
 
 
-def update_recording(recording_id: str, updates: dict) -> Optional[dict]:
+@synchronized(lambda: HISTORY_PATH)
+def update_recording(recording_id: str, updates: dict) -> dict | None:
     """Update fields of an existing recording."""
     entries = load()
     target = None
@@ -208,6 +215,7 @@ def recover_recording(recording_id: str) -> bool:
     return res is not None
 
 
+@synchronized(lambda: HISTORY_PATH)
 def delete_recording(recording_id: str) -> bool:
     """Delete a recording entry and its audio file."""
     entries = load()
@@ -232,8 +240,8 @@ def delete_recording(recording_id: str) -> bool:
 
 
 def get_history(
-    search_query: Optional[str] = None,
-    status_filter: Optional[str] = None,
+    search_query: str | None = None,
+    status_filter: str | None = None,
     limit: int = 100,
 ) -> list[dict]:
     """
@@ -272,34 +280,49 @@ def get_history(
 
 
 def get_stats() -> dict:
-    """Calculate aggregate usage statistics matching Wispr Flow dashboard."""
-    entries = load()
+    """Report actual activity; an empty workspace always starts at zero."""
+    entries = [item for item in load() if item.get("status") != "dismissed"]
     total_words = 0
     total_duration_sec = 0.0
-    wpm_samples = []
-
+    timed_words = 0
+    active_dates = set()
     for item in entries:
-        if item.get("status") == "dismissed":
-            continue
         text = item.get("formatted") or item.get("cleaned") or item.get("raw") or ""
         words = len(text.split())
         total_words += words
-        dur = float(item.get("duration_sec") or 0.0)
-        total_duration_sec += dur
-        if item.get("wpm") and item.get("wpm") > 20:
-            wpm_samples.append(item.get("wpm"))
-
-    avg_wpm = int(sum(wpm_samples) / len(wpm_samples)) if wpm_samples else 106
-    # Calculate streak days
-    streak_days = 1 if len(entries) > 0 else 0
-
+        duration = max(0.0, float(item.get("duration_sec") or 0.0))
+        total_duration_sec += duration
+        if duration > 0:
+            timed_words += words
+        try:
+            active_dates.add(datetime.fromisoformat(item["timestamp"]).date())
+        except (KeyError, ValueError, TypeError):
+            pass
+    day = datetime.now().date()
+    if day not in active_dates:
+        day -= timedelta(days=1)
+    streak_days = 0
+    while day in active_dates:
+        streak_days += 1
+        day -= timedelta(days=1)
     return {
-        "total_words": total_words if total_words > 0 else 35500,
-        "formatted_words": f"{round(total_words/1000, 1)}K" if total_words >= 1000 else str(total_words),
-        "avg_wpm": avg_wpm,
+        "total_words": total_words,
+        "formatted_words": f"{total_words / 1000:.1f}K" if total_words >= 1000 else str(total_words),
+        "avg_wpm": round(timed_words / (total_duration_sec / 60)) if total_duration_sec else 0,
         "streak_days": streak_days,
         "total_recordings": len(entries),
         "total_minutes": round(total_duration_sec / 60.0, 1),
-        "words_remaining": max(0, 2000 - (total_words % 2000)),
-        "weekly_limit": 2000,
     }
+
+
+@synchronized(lambda: HISTORY_PATH)
+def recover_interrupted():
+    """A new owning desktop process can offer saved audio from interrupted inference."""
+    entries = load()
+    changed = False
+    for entry in entries:
+        if entry.get("status") == "processing":
+            entry["status"] = "failed"
+            changed = True
+    if changed:
+        _persist_history(entries)

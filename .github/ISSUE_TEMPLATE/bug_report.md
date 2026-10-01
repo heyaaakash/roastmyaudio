@@ -1,44 +1,31 @@
 ---
 name: Bug report
-about: Something isn't working
+about: Help us reproduce an unexpected result
 title: "[Bug] "
 labels: bug
-assignees: ""
 ---
 
-## Describe the bug
+## What happened?
 
-A clear and concise description of what is broken.
+Expected behavior and actual behavior:
 
-## Steps to reproduce
+## Reproduce it
 
-1. Start the app with `make run`
-2. ...
-3. See error
-
-## Expected behavior
-
-What should have happened.
-
-## Actual behavior
-
-What actually happened. Include any error output from the terminal.
+1.
+2.
+3.
 
 ## Environment
 
-- macOS version:
-- Python version (`python3 --version`):
-- Whisper model in use:
-- Running Ollama? Yes / No
+- Version (`cat VERSION`) / commit:
+- Web workspace or native macOS app:
+- OS and CPU architecture:
+- Python and browser versions:
+- Speech model / language:
+- Optional local cleanup enabled / model:
+- Microphone permissions granted:
 
-## Logs
+## Redacted diagnostics
 
-Paste any relevant output from the terminal when running `make run`.
-
-```
-paste logs here
-```
-
-## Additional context
-
-Any other information that might help diagnose the issue.
+Include relevant errors and synthetic examples. Remove private transcripts, audio,
+clipboard content, tokens, usernames, and absolute personal paths before posting.

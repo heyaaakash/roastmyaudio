@@ -1,3 +1,5 @@
+> **Retained prototype.** Use the canonical application and current instructions in the [root README](../README.md). The instructions and claims below describe earlier work and are not current release evidence.
+
 # macOS Desktop Apps
 
 This folder now includes two app modes:

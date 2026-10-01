@@ -1,8 +1,8 @@
 """
 Background model warmup for the macOS menu bar app.
 
-Pre-loads Whisper models and warms up the Ollama LLM at startup so the
-first push-to-talk invocation has no latency spike.
+Preloads the selected speech/preview models and optional embedded cleanup engine.
+Downloads and initialization run off the UI thread; failures remain retryable.
 """
 
 import sys
@@ -21,50 +21,35 @@ for _p in (str(PROJECT_ROOT), str(CONFIG_DIR)):
         sys.path.insert(0, _p)
 
 from src.shared.llm_cleanup import warmup as llm_warmup  # noqa: E402
-from src.shared.settings import get as get_setting  # noqa: E402
-from src.shared.transcriber import get_inference_lock, get_model_by_name  # noqa: E402
+from src.shared.settings import load as load_settings  # noqa: E402
+from src.shared.transcriber import (  # noqa: E402
+    get_inference_lock,
+    get_model_by_name,
+    get_preview_model_name,
+)
 
 
 def load_models_async(on_complete: Optional[Callable] = None) -> None:
-    """
-    Pre-load the primary (base) and preview (tiny.en) Whisper models, plus
-    warm up the embedded Metal LLM. Runs in a daemon thread so it never blocks the UI.
-
-    Args:
-        on_complete: Optional callback called on the thread when warmup finishes.
-    """
+    """Warm the selected models; callback receives whether speech initialization succeeded."""
 
     def _load():
+        settings = load_settings()
         silence = np.zeros(16_000, dtype=np.float32)
-
+        ready = False
         try:
-            # 1. Primary transcription model
-            print("Warming up Whisper 'base'...")
-            primary = get_model_by_name("base")
-            lock = get_inference_lock("base")
-            with lock:
-                segs, _ = primary.transcribe(silence, language="en", vad_filter=False)
-                list(segs)
-
-            # 2. Live-preview model
-            print("Warming up Whisper 'tiny.en'...")
-            preview = get_model_by_name("tiny.en")
-            lock_p = get_inference_lock("tiny.en")
-            with lock_p:
-                segs, _ = preview.transcribe(silence, language="en", vad_filter=False)
-                list(segs)
-
-            # 3. Embedded Local LLM (Metal GPU)
-            if get_setting("llm_enabled"):
-                llm_model = get_setting("llm_model") or "qwen2.5-0.5b"
-                print(f"Warming up embedded LLM '{llm_model}' on Metal...")
-                llm_warmup(model_key=llm_model)
-
-            print("All models ready.")
-        except Exception as exc:  # noqa: BLE001
-            print(f"Warmup warning: {exc}")
+            selected = settings["model"]
+            for name in dict.fromkeys((selected, get_preview_model_name(selected))):
+                model = get_model_by_name(name)
+                with get_inference_lock(name):
+                    segments, _ = model.transcribe(silence, language="en", vad_filter=False)
+                    list(segments)
+            ready = True
+            if settings["llm_enabled"]:
+                llm_warmup(model_key=settings["llm_model"])
+        except Exception as exc:
+            print(f"Model warmup unavailable: {type(exc).__name__}")
         finally:
             if on_complete:
-                on_complete()
+                on_complete(ready)
 
     threading.Thread(target=_load, daemon=True).start()

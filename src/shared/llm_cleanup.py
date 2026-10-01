@@ -162,7 +162,6 @@ def ensure_model_file(model_key: str = DEFAULT_LLM_MODEL) -> Path:
         repo_id=repo_id,
         filename=filename,
         local_dir=str(LLM_CACHE_DIR),
-        local_dir_use_symlinks=False,
     )
     return Path(downloaded_path)
 

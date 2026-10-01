@@ -1,364 +1,93 @@
-# 🎙️ RoastMyAudio
+<p align="center"><img src="src/apps/web/static/icon.svg" width="64" alt="RoastMyAudio waveform icon"></p>
+<h1 align="center">RoastMyAudio</h1>
+<p align="center"><strong>A little less typing. A little more thinking.</strong><br>Turn your voice into words, in a workspace that runs on your computer.</p>
+<p align="center"><a href="#get-started">Get started</a> · <a href="docs/INSTALLATION.md">Setup guide</a> · <a href="docs/PRIVACY.md">Privacy</a> · <a href="https://github.com/heyaaakash/roastmyaudio/issues">Report a bug</a></p>
 
-> **Open-source, fully local speech-to-text for every device**
+![RoastMyAudio's local voice workspace with fictional sample thoughts](screenshots/workspace-sample.png)
 
-RoastMyAudio is a privacy-first dictation engine powered by OpenAI's [Whisper](https://openai.com/research/whisper). Run it on **macOS** (menu bar app) or **any OS** (web browser). Nothing leaves your machine. No subscriptions. No cloud. No telemetry.
+*Actual web interface, captured with fictional sample transcripts. This is an unpublished preview. A local Mac app bundle is buildable; human microphone use and signed installation still need release validation.*
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-green.svg)](https://www.python.org/downloads/)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+## Why I built it
 
----
+I'm Aakash, a product manager who is very fond of building things. I like taking a small frustration, making something that helps, and getting the details right through use.
 
-## Use Cases
+This one started with the gap between having a thought and typing it out. I wanted a place to speak, find the useful words, and move on. The name is a little playful; the goal is practical: make a tool I'd reach for myself.
 
-### 🖥️ macOS Menu Bar App
-Hold a key, speak, release — text pastes anywhere instantly.
+RoastMyAudio is my workbench for that idea. It uses faster-whisper for speech recognition, with optional local AI cleanup. The experience takes inspiration from thoughtful voice tools like [Wispr Flow](https://wisprflow.ai/), with its own interface and implementation. It isn't affiliated with Wispr and doesn't claim feature or performance parity.
 
-```
-Hold Fn  →  speak  →  release  →  text pasted into any app
-```
+## What you can do
 
-- **Live preview** of words while you speak
-- **One-key push-to-talk** (hold `Fn` or `Ctrl+Option+D`)
-- **Instant text injection** via Cmd+V
-- Perfect for emails, Slack, notes, code comments
+- **One place to speak.** Mac workspace buttons, menu actions, and shortcuts control one recording session, with the same microphone, history, and preferences. The menu app opens its workspace in a native window.
+- **A clear first minute.** Guided setup explains permissions, prepares the speech model, and offers a practice dictation. Microphone access is enough for workspace recording; system shortcuts and paste need additional permissions.
+- **Keep your work.** Drafts, appearance, vocabulary, settings, and saved recordings persist across restarts and workspace port changes. Failed native inference retains audio for retry; completed thoughts are searchable, playable, exportable, and recoverable after dismissal.
+- **Words that work your way.** Add recognition hints, exact correction pairs, whole-phrase snippets, and app-specific writing styles. Nothing is learned automatically. Optional local AI enables style rewrites.
+- **Stay in control.** Hold-to-talk or tap-to-toggle, a fallback shortcut, pause/resume, input selection, optional feedback and context, and an explicit launch-at-login control in the bundled app.
+- **A considered workspace.** Light/dark appearance, responsive layouts, keyboard controls, dialog focus, audio-reactive animation, and reduced-motion support. Diagnostics omit human content; release checking opens GitHub manually.
 
-### 🌐 Web App (macOS, Windows, Linux)
-Open a browser tab and start dictating.
+Recognition and cleanup can make mistakes. Review your words before sharing them. There is no account, subscription, paid quota, meeting bot, automatic updater, or cross-device sync. The standalone browser remains available for development and local web use.
 
-```
-http://127.0.0.1:5000  →  record  →  transcribed text in browser
-```
+## Get started
 
-- Works on **any OS** (Windows, Mac, Linux)
-- Use on multiple devices sharing the same computer
-- Copy-paste results or integrate with other tools
-- No native app required
+For the unified Mac source preview, use **Python 3.12** and an interactive macOS desktop:
 
----
-
-
-## Quick Start
-
-### macOS Menu Bar (Recommended)
-
-```bash
-# Clone and setup
-git clone https://github.com/roastmyaudio/roastmyaudio
+```sh
+git clone https://github.com/heyaaakash/roastmyaudio.git
 cd roastmyaudio
-
-make setup   # creates .venv, installs deps locally
-make run     # launches menu bar app
+make setup-macos PYTHON=python3.12
+make run            # menu app + native workspace + managed local server
 ```
 
-That's it. Hold `Fn` to start speaking.
+Follow the first-run setup: allow Microphone, prepare the speech model, then try a practice sentence. Choose **Open Workspace…**, **Recent Thoughts…**, or **Preferences…** from the menu. Closing the window keeps the menu app running; quitting releases capture and stops its server. Fn is the default hold shortcut, with **Ctrl+Option+D** as a fallback; permission-dependent behavior still needs a human check.
 
-**Optional: Pre-download models** (saves waiting on first use)
+The first model download needs internet and can take a while. Cached inference runs locally. Start with `base`; larger models need more disk space, memory, and processing time. Native/browser recordings stop after five minutes; browser uploads are limited to 25 MB.
 
-```bash
-make download
+To build the local Mac preview with its own Python runtime:
+
+```sh
+make setup-bundle
+make build-macos    # dist/macos/RoastMyAudio.app + preview ZIP
 ```
 
-**Optional: Start at login**
+The preview bundle is signed ad hoc and is **not notarized or ready for public distribution**. It was built and smoke-tested on this developer's Apple Silicon Mac. Developer ID signing, clean installation, real microphone/paste, and login registration remain launch gates. [Exact readiness evidence →](docs/VALIDATION.md)
 
-```bash
-bash scripts/install_launch_agent.sh
-```
+For the standalone local browser workspace:
 
-### Web App (All Operating Systems)
-
-```bash
-make setup   # once
-make web     # start server
-```
-
-Then open **http://127.0.0.1:5000** in your browser.
-
----
-
-## Features
-
-### Core
-- ✅ **Real-time speech-to-text** — Uses OpenAI Whisper (10 languages)
-- ✅ **Whisper model selector** — `tiny` (40 MB) to `large-v3` (3 GB)
-- ✅ **Spoken commands** — Say "new line", "period", "comma" → they appear as formatting
-- ✅ **Custom dictionary** — Add domain-specific terms (e.g., "Kubernetes", "GraphQL")
-- ✅ **Transcription history** — Recent transcriptions saved locally
-
-### macOS Menu Bar Only
-- ✅ **Push-to-talk** — Hold `Fn` (or `Ctrl+Option+D` fallback)
-- ✅ **Live preview overlay** — See words appear as you speak
-- ✅ **Automatic text injection** — Results pasted via Cmd+V into any app
-- ✅ **Menu bar quick settings** — Change model, language from top bar icon
-- ✅ **Launch at login** — Optional auto-start
-
-### Web App
-- ✅ **Browser recording** — Works on any OS
-- ✅ **Model selection dropdown** — Choose transcription speed vs. accuracy
-- ✅ **Copy to clipboard** — One-click results export
-- ✅ **Responsive design** — Desktop, tablet, and mobile friendly
-
-### Optional Enhancements
-- ✅ **Embedded AI cleanup** — Metal GPU accelerated local LLM (Qwen2.5-0.5B / SmolLM2-360M) to fix grammar, punctuation, self-corrections, and remove filler words with zero external software
-- ✅ **Environment variable config** — Override settings without editing code
-
----
-
-## Privacy & Security
-
-**All processing happens on your computer:**
-
-- 🔐 Models stored in `cache/models/` and `cache/llm/` (local project folder)
-- 📝 History saved in `data/history.json` (local project folder)
-- ⚙️ Settings in `data/settings.json` (local project folder)
-- 🌐 **Zero external API calls** (100% offline in-process execution)
-- 🚫 **No telemetry, analytics, or crash reporting**
-
-**Internet required only for:**
-- Initial model download (one-time, cached locally)
-
----
-
-## System Requirements
-
-### macOS Menu Bar App
-- **macOS 11+** (Big Sur or later, Apple Silicon recommended for Metal GPU acceleration)
-- **Python 3.9+**
-- **2 GB+ free disk** (for models; 140 MB minimum with `tiny` model)
-- **2–8 GB RAM** (depends on model size; `tiny` needs ~1 GB, `base` needs ~2-3 GB)
-
-### Web App
-- **macOS, Windows, or Linux**
-- **Python 3.9+**
-- **Modern browser** with microphone access (Chrome, Firefox, Safari, Edge)
-- **2 GB+ free disk**
-
-Check your Python version:
-
-```bash
-python3 --version   # Should output 3.9 or higher
-```
-
----
-
-## Commands
-
-```bash
-make setup      # Create .venv and install all dependencies
-make run        # Start macOS menu bar app
-make web        # Start web UI (http://127.0.0.1:5000)
-make download   # Download Whisper models interactively
-make test       # Run test suite
-make lint       # Check code style (ruff)
-make clean      # Remove .venv and cached files
-```
-
----
-
-## Configuration
-
-Settings auto-save when changed in the app menu. You can also override via environment variables:
-
-```bash
-export WHISPER_MODEL=small            # tiny, base (default), small, medium, large
-export WHISPER_LANGUAGE=es            # en (default), es, fr, de, zh, ja, pt, it, ko, ru
-export LLM_MODEL=qwen2.5-0.5b         # qwen2.5-0.5b (default), smollm2-360m
-```
-
-Or create `config/.env` and add these variables:
-
-```bash
-WHISPER_MODEL=small
-WHISPER_LANGUAGE=en
-```
-
-See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed setup and troubleshooting.
-
----
-
-## Documentation
-
-- **[Installation Guide](docs/INSTALLATION.md)** — Detailed setup for both platforms
-- **[Architecture](docs/ARCHITECTURE.md)** — How RoastMyAudio works internally
-- **[Contributing](CONTRIBUTING.md)** — How to contribute or report bugs
-- **[Code of Conduct](CODE_OF_CONDUCT.md)** — Community guidelines
-
----
-
-## Project Structure
-
-```
-src/
-  apps/
-    macos/              # Menu bar app (macOS only)
-      menubar_dictation.py
-      audio_recorder.py
-      hud_overlay.py
-    web/                # Web app (all OS)
-      app.py
-      static/, templates/
-  shared/               # Cross-platform modules
-    transcriber.py      # Whisper transcription engine
-    formatter.py        # Spoken command & text formatting
-    llm_cleanup.py      # Optional Ollama grammar fix
-    text_injector.py    # macOS text injection
-    dictionary.py       # Custom word dictionary
-    history.py          # Transcription history
-    settings.py         # Configuration management
-config/
-  config.py             # Centralized settings & paths
-docs/
-  INSTALLATION.md       # Setup & troubleshooting
-  ARCHITECTURE.md       # Technical design
-data/                   # Auto-created at runtime
-  history.json          # Transcription log
-  settings.json         # User preferences
-cache/
-  models/               # Downloaded Whisper models
-```
-
----
-
-## Troubleshooting
-
-**Q: Models not downloading?**  
-Models download automatically to `cache/models/` on first use. If interrupted, delete `cache/models/` and try again.
-
-**Q: Menu bar app not responding to Fn key?**  
-1. Grant accessibility permissions: **System Preferences → Security & Privacy → Accessibility**
-2. Restart the app
-3. Fallback hotkey is `Ctrl+Option+D`
-
-**Q: Web app won't open in browser?**  
-Ensure `http://127.0.0.1:5000` is not blocked by antivirus or firewall.
-
-**Q: How do I use Ollama for grammar cleanup?**  
-1. Install [Ollama](https://ollama.ai)
-2. Run `ollama pull llama3.2:1b` to download a lightweight model
-3. Start Ollama (runs on `localhost:11434` by default)
-4. RoastMyAudio will auto-detect and use it
-
-See [docs/INSTALLATION.md](docs/INSTALLATION.md#troubleshooting) for more help.
-
----
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
-
-- Reporting bugs
-- Suggesting features
-- Setting up a development environment
-- Submitting pull requests
-
----
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## Support
-
-💬 **Questions or issues?**
-- Open a [GitHub Issue](https://github.com/roastmyaudio/roastmyaudio/issues)
-- Check [docs/](docs/) for detailed docs
-- Review [CONTRIBUTING.md](CONTRIBUTING.md) for setup help
-
-**Like this project?** Please ⭐ it on GitHub!
-
----
-
-## macOS permissions
-
-The app needs three permissions on first launch:
-
-1. **Microphone** — to capture your voice
-2. **Input Monitoring** — to detect the `Fn` key globally
-3. **Accessibility** — to inject text into other apps
-
-macOS will prompt for these automatically. If something breaks, go to **System Settings → Privacy & Security** and grant access to Terminal or your Python process.
-
----
-
-## Requirements
-
-- macOS 12+ (Monterey or later)
-- Python 3.9–3.12
-- ~500 MB disk space for the default base model
-- 4 GB RAM recommended (16 GB for large-v3)
-
----
-
-## Architecture
-
-```
-src/
-  shared/               # Used by both macOS app and web UI
-    transcriber.py      # faster-whisper engine (int8, CPU)
-    formatter.py        # spoken commands, punctuation, capitalization
-    llm_cleanup.py      # Ollama LLM cleanup (optional)
-    text_injector.py    # Cmd+V injection via Quartz
-    settings.py         # data/settings.json persistence
-    dictionary.py       # custom word hints for Whisper
-    history.py          # transcription history
-  apps/
-    macos/
-      menubar_dictation.py   # rumps menu bar orchestrator
-      hud_overlay.py         # NSWindow live preview pill
-      audio_recorder.py      # sounddevice capture
-      warmup.py              # startup model preloading
-    web/
-      app.py                 # Flask server
-      templates/ static/
-
-config/
-  config.py             # all paths (everything relative to project root)
-cache/                  # auto-created — Whisper models live here
-data/                   # auto-created — history, settings, runtime files
-```
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, and code style.
-
-Quick start for contributors:
-
-```bash
+```sh
 make setup
-make test    # should all pass before submitting a PR
-make lint
+make web
 ```
 
----
+Open **[localhost:5000](http://127.0.0.1:5000)**, start dictating, allow the browser microphone, speak, and finish. Copy the result or continue in Scratchpad. **Option/Alt+D** starts/stops, **/** focuses search, **?** opens help. Use `FLASK_PORT=5057 make web` if needed. This browser client uses its own capture lifecycle; the Mac app already includes its workspace server.
 
-## Troubleshooting
+The package declares Python 3.10+; only 3.12 was checked. Other browsers, Windows/Linux, and real mobile devices remain unverified. [Capability matrix →](docs/CAPABILITY_MATRIX.md)
 
-**"No speech recognized" on every attempt**
-- Check microphone permissions in System Settings
-- Try a larger model: select `small` or `medium` from the Model menu
+```sh
+make setup-cleanup  # optional llama.cpp cleanup; may require compiler tooling
+```
 
-**Fn key not working**
-- Use `Ctrl+Option+D` as the fallback
-- Some external keyboards don't expose the Fn key to macOS — this is a hardware limitation
+Without the cleanup dependency, speech recognition and rule-based formatting still work. [Detailed setup and troubleshooting →](docs/INSTALLATION.md)
 
-**Ollama cleanup not working**
-- Start Ollama: `ollama serve`
-- Pull the model: `ollama pull llama3.2:1b`
-- Or disable it from the menu: **LLM Cleanup: OFF**
+## Your data, plainly
 
-**App doesn't paste into some apps**
-- Some apps (Finder, System Settings) don't support Cmd+V injection
-- The transcript is copied to clipboard — press Cmd+V manually
+The Mac app saves recordings, transcripts, drafts, vocabulary, personalization, and preferences in `~/Library/Application Support/RoastMyAudio/`; models live in `~/Library/Caches/RoastMyAudio/`. Source web development uses project `data/` and `cache/` by default. The source Mac launcher imports known project data once into an empty desktop store without deleting the originals. A bundled app does not discover an unrelated source checkout.
 
----
+Dismiss keeps recordings; Delete removes the entry and associated WAV. Native context reads clipboard text only when explicitly enabled and is off by default. Dictation into another app checks the foreground target before sending paste and restores clipboard formats when no newer clipboard change intervenes. Downloads contact package/model providers; the UI has no remote fonts or analytics. Keep the server on loopback. [Storage, retention, and deletion details →](docs/PRIVACY.md)
 
-## License
+## Build with me
 
-MIT — see [LICENSE](LICENSE).
+```sh
+make test          # isolated behavior tests; inference/native endpoints mocked
+make lint          # Python checks
+make verify        # tests, dependency consistency, JS syntax, links, metadata
+make screenshots   # optional Playwright captures with isolated fictional data
+make smoke-macos   # real Cocoa/WebKit; fictional capture and mocked clipboard
+make package       # inspected, re-extracted source archive
+```
 
-Built on [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and [OpenAI Whisper](https://github.com/openai/whisper).
+The canonical application code is in `src/`. Older prototypes in `macos_app/`, `web_mvp/`, and `whisper-flow/` are retained for reference and excluded from the source release archive. Use the root commands. Releases are prepared locally; this repo contains no GitHub Actions workflows.
+
+Useful starting points: [development](docs/DEVELOPMENT.md), [architecture](docs/ARCHITECTURE.md), [contributing](CONTRIBUTING.md), [validation evidence](docs/VALIDATION.md), and [launch checklist](docs/LAUNCH_CHECKLIST.md).
+
+Small fixes, careful feedback, and ideas grounded in an actual workflow are welcome. Please use fictional examples and redact private audio, transcripts, and clipboard content in issues.
+
+[MIT license](LICENSE) · [Third-party attribution](docs/ATTRIBUTIONS.md) · [Security reporting](SECURITY.md) · [Changelog](CHANGELOG.md)

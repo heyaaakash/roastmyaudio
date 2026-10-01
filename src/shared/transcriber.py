@@ -5,19 +5,24 @@ All models are cached locally in the project's cache/models/ directory.
 Uses int8 quantization on CPU — fast on Apple Silicon ARM NEON.
 """
 
+from __future__ import annotations
+
 import re
 import sys
 import threading
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
+import onnxruntime
+
+onnxruntime.disable_telemetry_events()
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 if str(CONFIG_DIR) not in sys.path:
     sys.path.insert(0, str(CONFIG_DIR))
 
 from faster_whisper import BatchedInferencePipeline, WhisperModel  # noqa: E402
+from faster_whisper.audio import decode_audio  # noqa: E402
 
 from config import DEFAULT_MODEL, MODELS_CACHE_DIR  # noqa: E402
 
@@ -25,30 +30,45 @@ from config import DEFAULT_MODEL, MODELS_CACHE_DIR  # noqa: E402
 # Available models
 # ---------------------------------------------------------------------------
 AVAILABLE_MODELS = [
-    "tiny", "tiny.en",
-    "base", "base.en",
-    "small", "small.en",
-    "medium", "medium.en",
-    "large-v3", "large-v3-turbo",
+    "tiny",
+    "tiny.en",
+    "base",
+    "base.en",
+    "small",
+    "small.en",
+    "medium",
+    "medium.en",
+    "large-v3",
+    "large-v3-turbo",
     "turbo",
 ]
 
 MODEL_DISPLAY_ORDER = [
-    "tiny.en", "tiny",
-    "base.en", "base",
-    "small.en", "small",
-    "medium.en", "medium",
-    "large-v3", "large-v3-turbo",
+    "tiny.en",
+    "tiny",
+    "base.en",
+    "base",
+    "small.en",
+    "small",
+    "medium.en",
+    "medium",
+    "large-v3",
+    "large-v3-turbo",
     "turbo",
 ]
 
 LIVE_PREVIEW_MODEL_PREFERENCE = ("tiny.en", "tiny", "base.en", "base")
 
 # Silence-hallucination blacklist
-_HALLUCINATION_BLACKLIST = frozenset([
-    "thank you", "thanks for watching", "subtitle",
-    "please subscribe", "the end",
-])
+_HALLUCINATION_BLACKLIST = frozenset(
+    [
+        "thank you",
+        "thanks for watching",
+        "subtitle",
+        "please subscribe",
+        "the end",
+    ]
+)
 
 # ---------------------------------------------------------------------------
 # Thread-safe model cache
@@ -67,7 +87,7 @@ def get_default_model_name() -> str:
     return DEFAULT_MODEL if DEFAULT_MODEL in AVAILABLE_MODELS else "base"
 
 
-def get_preview_model_name(selected_model: Optional[str] = None) -> str:
+def get_preview_model_name(selected_model: str | None = None) -> str:
     """Return the fastest available model suitable for live preview."""
     installed = get_installed_models()
     for candidate in LIVE_PREVIEW_MODEL_PREFERENCE:
@@ -123,9 +143,9 @@ def get_inference_lock(model_name: str) -> threading.Lock:
 def transcribe(
     audio: np.ndarray,
     model_name: str = "base",
-    language: Optional[str] = "en",
-    initial_prompt: Optional[str] = None,
-    inference_lock: Optional[threading.Lock] = None,
+    language: str | None = "en",
+    initial_prompt: str | None = None,
+    inference_lock: threading.Lock | None = None,
     is_preview: bool = False,
 ) -> str:
     """
@@ -149,11 +169,19 @@ def transcribe(
     Returns:
         Cleaned transcript string, or "" if no speech detected.
     """
+    if isinstance(audio, (str, Path)):
+        audio = decode_audio(str(audio), sampling_rate=16000)
+
+    if language == "auto":
+        language = None
+    if model_name.endswith(".en") and language not in ("en", None):
+        raise ValueError("English-only models require English. Choose a multilingual model.")
+
     if audio is None or audio.size == 0:
         return ""
 
     # 1. Noise floor guard
-    rms = float(np.sqrt(np.mean(audio ** 2)))
+    rms = float(np.sqrt(np.mean(audio**2)))
     if rms < 0.01:
         return ""
 
@@ -191,10 +219,7 @@ def transcribe(
 
     # 4. Segment confidence filtering
     if not is_preview:
-        segments = [
-            seg for seg in segments
-            if seg.no_speech_prob < 0.2 and seg.avg_logprob > -0.5
-        ]
+        segments = [seg for seg in segments if seg.no_speech_prob < 0.2 and seg.avg_logprob > -0.5]
 
     raw_text = " ".join(seg.text.strip() for seg in segments).strip()
 

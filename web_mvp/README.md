@@ -1,3 +1,5 @@
+> **Retained prototype.** Use the canonical application and current instructions in the [root README](../README.md). The instructions and claims below describe earlier work and are not current release evidence.
+
 # Whisper Web MVP
 
 A minimal one-page web app for speech-to-text using Whisper.

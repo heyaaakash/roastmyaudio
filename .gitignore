@@ -60,3 +60,11 @@ instance/
 # Jupyter/IPython
 .ipynb_checkpoints/
 .jupyter/
+
+# Recordings must never be committed; old tracked copies require release review.
+**/runtime/
+.ruff_cache/
+.playwright/
+
+# ONNX runtime session artifact
+:memory:.ses

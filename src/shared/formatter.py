@@ -109,7 +109,7 @@ TRAILING_CONNECTOR_RE = re.compile(r"\b(and|then)\s*$", re.IGNORECASE)
 
 # Hallucination detection
 _HALLUCINATION_INDICATORS = frozenset({
-    "you", "i", "uh", "um", "ah", "so", "ok", "thank", "well", "like", "just"
+    "uh", "um", "ah"
 })
 
 
@@ -121,8 +121,8 @@ def filter_hallucinations(text: str) -> str:
     Remove hallucinated patterns that Whisper commonly generates on silence.
 
     Detects:
-    - Any single word appearing > 10% of transcript (repetition loop)
-    - > 30% filler/pronoun content
+    - Dominant words repeated at least three times (repetition loop)
+    - > 30% unambiguous hesitation sounds (um/uh/ah); preserve pronouns and articles
     """
     if not text or len(text.strip()) < 3:
         return text
@@ -156,12 +156,12 @@ def filter_hallucinations(text: str) -> str:
 
     start = next(
         (i for i, w in enumerate(words)
-         if w.lower().rstrip(".,!?;:") not in _HALLUCINATION_INDICATORS and len(w.rstrip(".,!?;:")) > 1),
+         if w.lower().rstrip(".,!?;:") not in _HALLUCINATION_INDICATORS),
         0,
     )
     end = next(
         (i for i in range(total - 1, -1, -1)
-         if words[i].lower().rstrip(".,!?;:") not in _HALLUCINATION_INDICATORS and len(words[i].rstrip(".,!?;:")) > 1),
+         if words[i].lower().rstrip(".,!?;:") not in _HALLUCINATION_INDICATORS),
         total - 1,
     )
     return " ".join(words[start : end + 1]).strip() if start <= end else ""
